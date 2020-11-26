@@ -13,7 +13,7 @@ def plot_inertial_accelerometer(data):
     plt.plot(data[:, 2], label='Z')
     plt.title('Accelerometer')
     plt.ylabel("Acceleration (g)")
-    plt.xlabel('Time(s)')
+    plt.xlabel('Timesteps')
     plt.legend()
     plt.show()
 
@@ -30,6 +30,34 @@ def plot_inertial_gyroscope(data):
     plt.plot(data[:, 5], label='Z')
     plt.title('Gyroscope')
     plt.ylabel('deg/sec')
-    plt.xlabel('Time(s)')
+    plt.xlabel('Timesteps')
+    plt.legend()
+    plt.show()
+
+
+def plot_accuracy(data):
+    """
+    Plots a list of accuracies over epochs
+    :param data: list
+    """
+    plt.style.use('seaborn-whitegrid')
+    plt.plot(data, label='Accuracy')
+    plt.title('Training accuracy')
+    plt.ylabel('Accuracy %')
+    plt.xlabel('Epochs')
+    plt.legend()
+    plt.show()
+
+
+def plot_loss(data):
+    """
+    Plots a list of losses over epochs
+    :param data: list
+    """
+    plt.style.use('seaborn-whitegrid')
+    plt.plot(data, label='Loss')
+    plt.title('Training loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epochs')
     plt.legend()
     plt.show()

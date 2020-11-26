@@ -11,7 +11,7 @@ pip-delete-this-directory.txt
 venv/
 
 # Repo specific
-datasets/
+/datasets/
 no-commit/
 .idea/
 
