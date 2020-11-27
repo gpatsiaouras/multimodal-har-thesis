@@ -2,6 +2,7 @@ import scipy.io
 import torch
 from torch.utils.data import Dataset
 import numpy as np
+import os.path
 
 from configurators.utd_mhad import UtdMhadDatasetConfig
 
@@ -9,8 +10,9 @@ from configurators.utd_mhad import UtdMhadDatasetConfig
 class UtdMhadInertialDataset(Dataset):
     """UTD MHAD Inertial Modality Dataset"""
 
-    def __init__(self, transform=None):
+    def __init__(self, train=True, transform=None):
         self.filenames = []
+        self.subjects = [1, 3, 5, 7] if train else [2, 4, 6, 8]
         self.labels = []
         self.read_files()
         self.transform = transform
@@ -22,11 +24,13 @@ class UtdMhadInertialDataset(Dataset):
         """
         utd = UtdMhadDatasetConfig()
         for actionKey, actionValue in utd.actions.items():
-            for subject in utd.subjects:
+            for subject in self.subjects:
                 for repetition in utd.repetitions:
                     filename = utd.get_filename(utd.actions[actionKey], utd.modalities['inertial'], subject, repetition)
-                    self.filenames.append(filename)
-                    self.labels.append(actionValue['file_id'])
+                    # Only include if the file exists. Some action/subject do not have 4 repetitions
+                    if os.path.isfile(filename):
+                        self.filenames.append(filename)
+                        self.labels.append(actionValue['file_id'])
 
     def __len__(self):
         """

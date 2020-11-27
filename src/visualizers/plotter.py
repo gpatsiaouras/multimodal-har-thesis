@@ -35,15 +35,18 @@ def plot_inertial_gyroscope(data):
     plt.show()
 
 
-def plot_accuracy(data):
+def plot_accuracy(train_acc, test_acc=None):
     """
     Plots a list of accuracies over epochs
-    :param data: list
+    :param train_acc: list
+    :param test_acc: list
     """
     plt.style.use('seaborn-whitegrid')
-    plt.plot(data, label='Accuracy')
-    plt.title('Training accuracy')
-    plt.ylabel('Accuracy %')
+    plt.plot(train_acc, label='Train')
+    if test_acc is not None:
+        plt.plot(test_acc, label='Test')
+    plt.title('Accuracy')
+    plt.ylabel('% of correct classification')
     plt.xlabel('Epochs')
     plt.legend()
     plt.show()

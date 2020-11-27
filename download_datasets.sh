@@ -27,14 +27,14 @@ DOWNLOAD_MMACT=true
 function download_utd_mhad () {
   echo
   echo -e "${CYAN}Downloading UTD-MHAD:${NC}"
-  echo -e "Inertial Videos 1/4..."
-  wget http://www.utdallas.edu/~kehtar/UTD-MAD/Inertial.zip -q -P "$DATASET_DIR"
-  echo -e "Depth Videos 2/4..."
-  wget http://www.utdallas.edu/~kehtar/UTD-MAD/Depth.zip -q -P "$DATASET_DIR"
-  echo -e "Skeleton Videos 3/4..."
-  wget http://www.utdallas.edu/~kehtar/UTD-MAD/Skeleton.zip -q -P "$DATASET_DIR"
-  echo -e "Inertial Videos 4/4..."
-  wget http://www.utdallas.edu/~kehtar/UTD-MAD/RGB.zip -q -P "$DATASET_DIR"
+  echo -e "Inertial Data 1/4..."
+  wget http://www.utdallas.edu/~kehtar/UTD-MAD/Inertial.zip -P "$DATASET_DIR"
+  echo -e "Depth Data 2/4..."
+  wget http://www.utdallas.edu/~kehtar/UTD-MAD/Depth.zip -P "$DATASET_DIR"
+  echo -e "Skeleton Data 3/4..."
+  wget http://www.utdallas.edu/~kehtar/UTD-MAD/Skeleton.zip -P "$DATASET_DIR"
+  echo -e "RGB Videos 4/4..."
+  wget http://www.utdallas.edu/~kehtar/UTD-MAD/RGB.zip -P "$DATASET_DIR"
 }
 
 function extract_utd_mhad () {

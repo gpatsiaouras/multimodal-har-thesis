@@ -12,8 +12,8 @@ class UtdMhadDatasetConfig:
             config = yaml.load(file, Loader=yaml.FullLoader)
             self.actions = config.get('actions')
             self.modalities = config.get('modalities')
-            self.subjects = range(1, config.get('subjects'))
-            self.repetitions = range(1, config.get('repetitions'))
+            self.subjects = range(1, config.get('subjects') + 1)
+            self.repetitions = range(1, config.get('repetitions') + 1)
 
     def get_filename(self, action, modality, subject, repetition):
         """
