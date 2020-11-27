@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 
-from src.configurators.utd_mhad import UtdMhadDatasetConfig
+from configurators.utd_mhad import UtdMhadDatasetConfig
 
 
 class UtdMhadInertialDataset(Dataset):

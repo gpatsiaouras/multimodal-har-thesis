@@ -3,10 +3,10 @@ from torch import optim
 from torch.nn import functional
 from torch.utils.data import DataLoader
 
-from src.datasets.utd_mhad_inertial import UtdMhadInertialDataset
-from src.models.cnn1d import CNN1D
-from src.transforms.inertial_transforms import Sampler, Compose, Flatten, FilterDimensions
-from src.visualizers.plotter import plot_accuracy, plot_loss
+from datasets import UtdMhadInertialDataset
+from models import CNN1D
+from transforms import Sampler, Compose, Flatten, FilterDimensions
+from visualizers import plot_accuracy, plot_loss
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
