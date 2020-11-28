@@ -1,6 +1,6 @@
 from scipy import signal
 import torch
-
+import numpy as np
 
 class Compose:
     """
@@ -49,12 +49,33 @@ class CropToSize:
 
 
 class Jittering:
+    """
+    Data augmentation through signal jittering, adding white Gaussian noise
+    """
     def __init__(self, jitter_factor=500):
+        """
+        Initialize with jitter factor default 500
+        :param jitter_factor:
+        """
         self.jitter_factor = jitter_factor
 
-    # TODO implement the jittering
     def __call__(self, x):
-        return x
+        """
+        Jitter signal by adding white Gaussian noise according to the algorithm
+        :param x: ndarray
+        :return: ndarray
+        """
+        jittered_x = np.zeros(x.shape)
+        # Seed random
+        np.random.seed(0)
+        for i in range(3):
+            data = x[:, i]
+            data_unique = np.unique(np.sort(data))
+            data_diff = np.diff(data_unique)
+            smallest_diff = np.min(data_diff)
+            scale_factor = 0.2 * self.jitter_factor * smallest_diff
+            jittered_x[:, i] = data + scale_factor * np.random.randn(x.shape[0])
+        return jittered_x
 
 
 class Sampler:

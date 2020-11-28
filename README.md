@@ -16,8 +16,11 @@ $ python3.6 -m venv venv
 $ source venv/bin/activate
 ```
 
-## Train the network
-```shell script
-$ cd src/
-$ python train.py
-```
+## Experiments / Training / Testing
+> Make you activated the virtual environment by running `source venv/bin/activate`
+> prior to running any of the following commands
+
+| Experiment  | Execute command |
+| ------------- | ------------- |
+| Train inertial network | `python train_inertial.py`  |
+| Visualize jittering transform in inertial data  | `python visualize_jittering.py` |

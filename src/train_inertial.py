@@ -6,28 +6,34 @@ from torch.utils.data import DataLoader
 from datasets import UtdMhadInertialDataset
 from models import CNN1D
 from tools import get_accuracy
-from transforms import Sampler, Compose, Flatten, FilterDimensions
+from transforms import Sampler, Compose, Flatten, FilterDimensions, Jittering
 from visualizers import plot_accuracy, plot_loss
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Seed number generator
+torch.manual_seed(0)
 
 # Hyperparameters
 in_channel = 1
 num_classes = 27
 learning_rate = 0.001
 batch_size = 256
-num_epochs = 100
+num_epochs = 50
+jitter_factor = 500
 
 # Load Data
 train_dataset = UtdMhadInertialDataset(train=True, transform=Compose([
     Sampler(107),
     FilterDimensions([0, 1, 2]),
+    Jittering(jitter_factor),
     Flatten(),
 ]))
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
 test_dataset = UtdMhadInertialDataset(train=False, transform=Compose([
     Sampler(107),
     FilterDimensions([0, 1, 2]),
+    Jittering(jitter_factor),
     Flatten(),
 ]))
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)

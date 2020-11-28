@@ -8,7 +8,7 @@ class CNN1D(nn.Module):
         """
         super(CNN1D, self).__init__()
         self.pool = nn.MaxPool1d(kernel_size=2, stride=None)
-        self.dropout = nn.Dropout(p=0.8, inplace=False)
+        self.dropout = nn.Dropout(p=0.8, inplace=True)
         self.relu = nn.ReLU(inplace=True)
 
         self.conv1 = nn.Conv1d(in_channels=1, out_channels=32, kernel_size=3, stride=1)
