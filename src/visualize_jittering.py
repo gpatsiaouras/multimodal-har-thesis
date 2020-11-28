@@ -14,7 +14,7 @@ dataset = UtdMhadInertialDataset(train=True, transform=Compose([
 # Retrieve one sample
 (sample, _) = dataset[0]
 jittering = Jittering(jitter_factor)
-
+print('test')
 plot_inertial_gyroscope_two(
     title='Gyroscope',
     y_labels=['Original', 'Jitter Factor %s' % jittering.jitter_factor],
