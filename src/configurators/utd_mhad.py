@@ -33,3 +33,10 @@ class UtdMhadDatasetConfig:
             modality['file_alias'],
             modality['file_ext']
         )
+
+    def get_class_names(self):
+        """
+        Returns all class names in a list
+        :return: list
+        """
+        return [key for key in self.actions]

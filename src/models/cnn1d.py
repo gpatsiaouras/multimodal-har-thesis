@@ -25,7 +25,7 @@ class CNN1D(nn.Module):
 
         self.fc1 = nn.Linear(512*8, 2048)
         self.fc2 = nn.Linear(2048, 27)
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(1)
 
     def forward(self, x):
         # Add a dimension in the middle because we only have one channel of data

@@ -16,3 +16,4 @@ scipy==1.5.4
 six==1.15.0
 tables==3.6.1
 torch==1.6.0
+prettytable~=2.0.0

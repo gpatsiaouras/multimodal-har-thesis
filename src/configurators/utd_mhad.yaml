@@ -90,11 +90,11 @@ actions:
     file_id: 8
     description: right hand draw x
     position: wrist
-  draw_circle_CW:
+  draw_circle_cw:
     file_id: 9
     description: right hand draw circle (clockwise)
     position: wrist
-  draw_circle_CCW:
+  draw_circle_ccw:
     file_id: 10
     description: right hand draw circle (counter clockwise)
     position: wrist
