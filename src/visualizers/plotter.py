@@ -10,7 +10,7 @@ def plot_inertial_accelerometer(data):
     :param data: inertial data
     :type data: ndarray
     """
-    _plot_inertial(data, title='Accelerometer', y_label='Acceleration (g)')
+    plot_inertial(data, title='Accelerometer', y_label='Acceleration (g)')
 
 
 def plot_inertial_gyroscope(data):
@@ -19,7 +19,7 @@ def plot_inertial_gyroscope(data):
     :param data: inertial data
     :type data: ndarray
     """
-    _plot_inertial(data, title='Gyroscope', y_label='deg/sec')
+    plot_inertial(data, title='Gyroscope', y_label='deg/sec')
 
 
 def plot_inertial_gyroscope_two(title, y_labels, data):
@@ -31,12 +31,13 @@ def plot_inertial_gyroscope_two(title, y_labels, data):
     fig.show()
 
 
-def _plot_inertial(data, title, y_label):
+def plot_inertial(data, title, y_label, save=False):
     """
     Plots inertial data
     :param data: ndarray
     :param title: Plot title
     :param y_label: Y axis label
+    :param save: Boolean
     """
     plt.style.use('seaborn-whitegrid')
     plt.plot(data[:, 0], label='X')
@@ -46,6 +47,8 @@ def _plot_inertial(data, title, y_label):
     plt.ylabel(y_label)
     plt.xlabel('Timesteps')
     plt.legend()
+    if save:
+        plt.savefig('%s.png' % title.strip())
     plt.show()
 
 
@@ -81,11 +84,12 @@ def plot_loss(data):
 
 
 def plot_confusion_matrix(cm, classes, title='Confusion matrix', cmap=plt.cm.Blues):
+    plt.style.use('default')
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     plt.colorbar()
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
+    plt.xticks(tick_marks, classes, rotation=90)
     plt.yticks(tick_marks, classes)
 
     thresh = cm.max() / 2.

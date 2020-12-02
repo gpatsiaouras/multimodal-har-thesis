@@ -4,7 +4,7 @@ from torch import optim
 from torch.nn import functional
 from torch.utils.data import DataLoader
 from prettytable import PrettyTable
-from datasets import UtdMhadInertialDataset
+from datasets import UtdMhadDataset
 from models import CNN1D
 from tools import get_accuracy, get_confusion_matrix, load_yaml
 from transforms import Sampler, Compose, Flatten, FilterDimensions, Jittering
@@ -37,14 +37,14 @@ print_table({
 })
 
 # Load Data
-train_dataset = UtdMhadInertialDataset(train=True, transform=Compose([
+train_dataset = UtdMhadDataset(modality='inertial', train=True, transform=Compose([
     Sampler(107),
     FilterDimensions([0, 1, 2]),
     Jittering(jitter_factor),
     Flatten(),
 ]))
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-test_dataset = UtdMhadInertialDataset(train=False, transform=Compose([
+test_dataset = UtdMhadDataset(modality='inertial', train=False, transform=Compose([
     Sampler(107),
     FilterDimensions([0, 1, 2]),
     Jittering(jitter_factor),

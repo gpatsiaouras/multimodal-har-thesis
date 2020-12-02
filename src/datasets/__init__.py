@@ -1,1 +1,1 @@
-from .utd_mhad_inertial import *
+from .utd_mhad import *
