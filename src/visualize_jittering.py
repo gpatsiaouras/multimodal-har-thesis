@@ -17,7 +17,7 @@ jittering1500 = Jittering(1500)
 jittering2000 = Jittering(2000)
 jittering2500 = Jittering(2500)
 
-plot_inertial(sample, title='Gyroscope - Original', y_label='deg/sec', save=True)
+plot_inertial(sample, title='Gyroscope - Jittering Original', y_label='deg/sec', save=True)
 plot_inertial(jittering500(sample), title='Gyroscope - Jittering 500', y_label='deg/sec', save=True)
 plot_inertial(jittering1000(sample), title='Gyroscope - Jittering 1000', y_label='deg/sec', save=True)
 plot_inertial(jittering1500(sample), title='Gyroscope - Jittering 1500', y_label='deg/sec', save=True)

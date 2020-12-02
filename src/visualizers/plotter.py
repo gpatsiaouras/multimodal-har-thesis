@@ -1,4 +1,5 @@
 import itertools
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,7 +49,7 @@ def plot_inertial(data, title, y_label, save=False):
     plt.xlabel('Timesteps')
     plt.legend()
     if save:
-        plt.savefig('%s.png' % title.strip())
+        _save_plot('%s.png' % title.strip())
     plt.show()
 
 
@@ -101,3 +102,10 @@ def plot_confusion_matrix(cm, classes, title='Confusion matrix', cmap=plt.cm.Blu
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     plt.show()
+
+
+def _save_plot(filename):
+    save_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'out'))
+    if not os.path.isdir(save_dir):
+        os.mkdir(save_dir)
+    plt.savefig(os.path.join(save_dir, filename))
