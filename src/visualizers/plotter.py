@@ -56,7 +56,7 @@ def plot_inertial(data, title, y_label, save=False):
     plt.show()
 
 
-def plot_accuracy(train_acc, test_acc=None, save=True):
+def plot_accuracy(train_acc, test_acc=None, save=False):
     """
     Plots a list of accuracies over epochs
     :param train_acc: list
@@ -72,11 +72,11 @@ def plot_accuracy(train_acc, test_acc=None, save=True):
     plt.xlabel('Epochs')
     plt.legend()
     if save:
-        _save_plot('%s.png' % 'Accuracy')
+        _save_plot('%s.png' % 'accu')
     plt.show()
 
 
-def plot_loss(data, save=True):
+def plot_loss(data, save=False):
     """
     Plots a list of losses over epochs
     :param data: list
@@ -89,7 +89,7 @@ def plot_loss(data, save=True):
     plt.xlabel('Epochs')
     plt.legend()
     if save:
-        _save_plot('%s.png' % 'Loss')
+        _save_plot('%s.png' % 'loss')
     plt.show()
 
 
@@ -100,6 +100,7 @@ def plot_confusion_matrix(cm, classes, title='Confusion matrix', normalize=False
         cm = cm * 100  # Make it percentage from 0-100%
 
     plt.style.use('default')
+    plt.figure(figsize=(11, 11))  # Set the size manually for the plot to be drawn correctly
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     plt.colorbar()
@@ -127,7 +128,7 @@ def _save_plot(filename):
     :return:
     """
     save_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'plots'))
-    datetime = time.strftime("%Y%m%d_%H:%M", time.localtime())
+    datetime = time.strftime("%Y%m%d_%H%M", time.localtime())
     filename = datetime + '_' + filename
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)

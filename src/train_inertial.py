@@ -121,9 +121,13 @@ for epoch in range(num_epochs):
     print('epoch duration: %s' % time.strftime('%H:%M:%S', time.gmtime(total_epoch_time)))
     print('total duration until now: %s' % time.strftime('%H:%M:%S', time.gmtime(total_time)))
 
+# Save the model after finished training. Add the number of epochs and
+# batch size in the filename for clarity
+save_model(model, 'ep%d_bs%d.pt' % (num_epochs, batch_size))
+
 # plot results
-plot_accuracy(train_acc=train_accuracies, test_acc=test_accuracies)
-plot_loss(losses)
+plot_accuracy(train_acc=train_accuracies, test_acc=test_accuracies, save=True)
+plot_loss(losses, save=True)
 plot_confusion_matrix(
     cm=get_confusion_matrix(test_loader, model, device),
     title='Confusion Matrix - Percentage %',
