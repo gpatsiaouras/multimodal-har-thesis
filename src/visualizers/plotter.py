@@ -3,6 +3,7 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 
 def plot_inertial_accelerometer(data):
@@ -14,13 +15,15 @@ def plot_inertial_accelerometer(data):
     plot_inertial(data, title='Accelerometer', y_label='Acceleration (g)')
 
 
-def plot_inertial_gyroscope(data):
+def plot_inertial_gyroscope(data, save):
     """
     Receives a chunk of inertial data (one file) and plots the gyroscope data
     :param data: inertial data
+    :param save: Save figure to file
     :type data: ndarray
+    :type data: boolean
     """
-    plot_inertial(data, title='Gyroscope', y_label='deg/sec')
+    plot_inertial(data, title='Gyroscope', y_label='deg/sec', save=save)
 
 
 def plot_inertial_gyroscope_two(title, y_labels, data):
@@ -38,7 +41,7 @@ def plot_inertial(data, title, y_label, save=False):
     :param data: ndarray
     :param title: Plot title
     :param y_label: Y axis label
-    :param save: Boolean
+    :param save: Save figure to file
     """
     plt.style.use('seaborn-whitegrid')
     plt.plot(data[:, 0], label='X')
@@ -53,11 +56,12 @@ def plot_inertial(data, title, y_label, save=False):
     plt.show()
 
 
-def plot_accuracy(train_acc, test_acc=None):
+def plot_accuracy(train_acc, test_acc=None, save=True):
     """
     Plots a list of accuracies over epochs
     :param train_acc: list
     :param test_acc: list
+    :param save: Save figure to file
     """
     plt.style.use('seaborn-whitegrid')
     plt.plot(train_acc, label='Train')
@@ -67,13 +71,16 @@ def plot_accuracy(train_acc, test_acc=None):
     plt.ylabel('% of correct classification')
     plt.xlabel('Epochs')
     plt.legend()
+    if save:
+        _save_plot('%s.png' % 'Accuracy')
     plt.show()
 
 
-def plot_loss(data):
+def plot_loss(data, save=True):
     """
     Plots a list of losses over epochs
     :param data: list
+    :param save: Save figure to file
     """
     plt.style.use('seaborn-whitegrid')
     plt.plot(data, label='Loss')
@@ -81,31 +88,47 @@ def plot_loss(data):
     plt.ylabel('Loss')
     plt.xlabel('Epochs')
     plt.legend()
+    if save:
+        _save_plot('%s.png' % 'Loss')
     plt.show()
 
 
-def plot_confusion_matrix(cm, classes, title='Confusion matrix', cmap=plt.cm.Blues):
+def plot_confusion_matrix(cm, classes, title='Confusion matrix', normalize=False, save=False,
+                          cmap=plt.get_cmap('Blues')):
+    if normalize:
+        cm = cm / cm.sum(axis=1)[:, np.newaxis]
+        cm = cm * 100  # Make it percentage from 0-100%
+
     plt.style.use('default')
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     plt.colorbar()
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=90)
+    plt.xticks(tick_marks, classes, rotation=270)
     plt.yticks(tick_marks, classes)
 
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], 'd'), horizontalalignment="center",
+        plt.text(j, i, int(cm[i, j]), horizontalalignment="center",
                  color="white" if cm[i, j] > thresh else "black")
 
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+    if save:
+        _save_plot('%s.png' % 'CM')
     plt.show()
 
 
 def _save_plot(filename):
-    save_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'out'))
+    """
+    Saves a plot to the 'plots' directory in the project root folder
+    :param filename: filename with extension
+    :return:
+    """
+    save_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'plots'))
+    datetime = time.strftime("%Y%m%d_%H:%M", time.localtime())
+    filename = datetime + '_' + filename
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
     plt.savefig(os.path.join(save_dir, filename))

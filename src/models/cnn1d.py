@@ -7,6 +7,7 @@ class CNN1D(nn.Module):
         Initiate layers of a 5 convolutions layer network
         """
         super(CNN1D, self).__init__()
+        self.name = 'CNN1D'
         self.pool = nn.MaxPool1d(kernel_size=2, stride=None)
         self.dropout = nn.Dropout(p=0.8, inplace=True)
         self.relu = nn.ReLU(inplace=True)
@@ -24,8 +25,8 @@ class CNN1D(nn.Module):
         self.flatten = nn.Flatten()
 
         self.fc1 = nn.Linear(512*8, 2048)
-        self.fc2 = nn.Linear(2048, 27)
-        self.softmax = nn.Softmax(1)
+        self.fc2 = nn.Linear(2048, 2048)
+        self.fc3 = nn.Linear(2048, 27)
 
     def forward(self, x):
         # Add a dimension in the middle because we only have one channel of data
@@ -44,10 +45,10 @@ class CNN1D(nn.Module):
         x = self.pool(x)
 
         x = self.flatten(x)
-        x = self.dropout(x)
         x = self.fc1(x)
         x = self.dropout(x)
         x = self.fc2(x)
-        x = self.softmax(x)
+        x = self.dropout(x)
+        x = self.fc3(x)
 
         return x
