@@ -56,9 +56,9 @@ class UtdMhadDataset(Dataset):
             idx = idx.tolist()
 
         if self.modality['file_ext'] == 'mat':
-            data = scipy.io.loadmat(self.filenames[idx])[self.modality['data_key']]
+            data = self._read_inertial(idx)
         elif self.modality['file_ext'] == 'avi':
-            data = cv2.VideoCapture(self.filenames[idx])
+            data = self._read_video(idx)
         else:
             raise Exception('Unsupported extention: %s' % self.modality['file_ext'])
 
@@ -69,3 +69,17 @@ class UtdMhadDataset(Dataset):
             data = self.transform(data)
 
         return data, actions
+
+    def _read_inertial(self, idx):
+        return scipy.io.loadmat(self.filenames[idx])[self.modality['data_key']]
+
+    def _read_video(self, idx):
+        video = cv2.VideoCapture(self.filenames[idx])
+        frames = []
+        ret = True
+        while ret:
+            ret, frame = video.read()
+            if ret:
+                frames.append(frame)
+
+        return frames

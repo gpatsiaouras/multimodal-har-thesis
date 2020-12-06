@@ -1,21 +1,11 @@
 import cv2
+import time
 
 
-def avi_player(cap):
-    # Read until video is completed
-    while cap.isOpened():
-        # Capture frame-by-frame
-        ret, frame = cap.read()
-        if ret:
-            # Display the resulting frame
-            cv2.imshow('Frame', frame)
-
-            # Press Q on keyboard to  exit
-            if cv2.waitKey(25) & 0xFF == ord('q'):
-                break
-        # Break the loop
-        else:
-            break
-
-    # When everything done, release the video capture object
-    cap.release()
+def frames_player(frames):
+    # Display the video frame by frame
+    for frame in frames:
+        cv2.imshow('Frame', frame)
+        cv2.waitKey(25)
+        # Loop at 15 frames/sec
+        time.sleep(1/15)
