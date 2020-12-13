@@ -1,11 +1,45 @@
-import cv2
-import scipy.io
-import torch
-from torch.utils.data import Dataset
-import numpy as np
 import os.path
 
+import cv2
+import numpy as np
+import scipy.io
+import torch
+from PIL import Image
+from torch.utils.data import Dataset
+
 from configurators.utd_mhad import UtdMhadDatasetConfig
+from tools import generate_sdfdi
+
+
+def _read_video(filename):
+    """
+    Receives a filename of a video, opes the file and saves all concurrent frames in a list as ndarray
+    :param filename: name of the video file
+    :return: list of frames
+    """
+    video = cv2.VideoCapture(filename)
+    frames = []
+    ret = True
+    while ret:
+        ret, frame = video.read()
+        if ret:
+            frames.append(frame)
+
+    return frames
+
+
+def _create_jpg_image(jpg_filename, video_filename):
+    """
+    Receives a filename of an image and a video, reads the video
+    generates the SDFDI image and saves it with the given image filename.
+    :param jpg_filename: The filename to save the image to
+    :param video_filename: The filename to read the video from
+    """
+    # The jpg image doesn't exist, create it by invoking the sdfdi generation
+    frames = _read_video(video_filename)
+    # Generate SDFDI and save the image as jpg
+    sdfdi = generate_sdfdi(frames)
+    cv2.imwrite(jpg_filename, sdfdi)
 
 
 class UtdMhadDataset(Dataset):
@@ -39,10 +73,21 @@ class UtdMhadDataset(Dataset):
                         modality=self.modality,
                         subject=subject,
                         repetition=repetition)
-                    # Only include if the file exists. Some action/subject do not have 4 repetitions
+                    # Only include if the file exists. Some action/subject do not have 4 repetitions.
+                    # For the modality of RGB, we use SDFDI images. In that case if the file doesn't exist
+                    # it means that it has to be created by a generation process. Although if the original video file,
+                    # doesn't exist then it's the same as above that the repetition probably doesn't exist
+                    # and we ignore it
                     if os.path.isfile(filename):
                         self.filenames.append(filename)
                         self.labels.append(actionValue['file_id'])
+                    elif self.modality['folder_name'] == 'RGB':
+                        video_filename = filename[:-3] + 'avi'
+                        if os.path.isfile(video_filename):
+                            print('Item %s doesn\'t exist. Creating...' % filename)
+                            _create_jpg_image(filename, video_filename)
+                            self.filenames.append(filename)
+                            self.labels.append(actionValue['file_id'])
 
     def __len__(self):
         """
@@ -57,12 +102,12 @@ class UtdMhadDataset(Dataset):
 
         if self.modality['file_ext'] == 'mat':
             data = self._read_inertial(idx)
-        elif self.modality['file_ext'] == 'avi':
-            data = self._read_video(idx)
+        elif self.modality['file_ext'] == 'jpg':
+            data = self._read_image(idx)
         else:
-            raise Exception('Unsupported extention: %s' % self.modality['file_ext'])
+            raise Exception('Unsupported extension: %s' % self.modality['file_ext'])
 
-        actions = np.zeros(27)
+        actions = np.zeros(len(self.dataset_config.actions))
         actions[self.labels[idx] - 1] = 1
 
         if self.transform:
@@ -73,13 +118,5 @@ class UtdMhadDataset(Dataset):
     def _read_inertial(self, idx):
         return scipy.io.loadmat(self.filenames[idx])[self.modality['data_key']]
 
-    def _read_video(self, idx):
-        video = cv2.VideoCapture(self.filenames[idx])
-        frames = []
-        ret = True
-        while ret:
-            ret, frame = video.read()
-            if ret:
-                frames.append(frame)
-
-        return frames
+    def _read_image(self, idx):
+        return Image.open(self.filenames[idx])

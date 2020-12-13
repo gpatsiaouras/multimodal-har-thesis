@@ -62,7 +62,6 @@ def generate_sdfdi(frames, verbose=False):
     d1 = _get_optical_flow(frames[0], frames[1])
 
     sdfdi = np.zeros(frames[0].shape)
-    print("Calculating")
     for i in range(1, len(frames) - 1):
         print('.', end='', flush=True)
         d2 = _get_optical_flow(frames[i], frames[i + 1])
@@ -74,6 +73,11 @@ def generate_sdfdi(frames, verbose=False):
         # Show sdfdi progress, if verbose is activated
         if verbose:
             print_sdfdi_image(sdfdi, continuous=True)
+
+    # Post processing
+    print('')  # Reset printing
+    sdfdi = cv.normalize(sdfdi, None, 0, 255, cv.NORM_MINMAX)
+    sdfdi = cv.cvtColor(sdfdi.astype('uint8'), cv.COLOR_BGR2RGB)
 
     return sdfdi
 

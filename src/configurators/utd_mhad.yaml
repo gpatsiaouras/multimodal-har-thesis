@@ -55,7 +55,7 @@ modalities:
   rgb:
     folder_name: RGB
     file_alias: color
-    file_ext: avi
+    file_ext: jpg
 
 actions:
   swipe_left:
