@@ -1,0 +1,7 @@
+dataset:
+  num_classes: 27
+
+hyper_parameters:
+  learning_rate: 0.0001
+  batch_size: 32
+  num_epochs: 50

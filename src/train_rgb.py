@@ -1,3 +1,5 @@
+import os
+import sys
 import time
 
 import torch
@@ -8,16 +10,34 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, Resize, ToTensor, RandomResizedCrop
 
 from datasets import UtdMhadDataset, UtdMhadDatasetConfig
-from tools import get_accuracy, save_model, get_confusion_matrix
-from visualizers import plot_accuracy, plot_loss, plot_confusion_matrix
+from tools import get_accuracy, save_model, get_confusion_matrix, load_yaml
+from visualizers import plot_accuracy, plot_loss, plot_confusion_matrix, print_table
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# Hyper parameters
-num_classes = 27
-batch_size = 32
-learning_rate = 0.0001
-num_epochs = 50
+# Seed number generator
+torch.manual_seed(0)
+
+# Load parameters from yaml file.
+if len(sys.argv) == 2:
+    yaml_file = sys.argv[1]
+else:
+    yaml_file = os.path.join(os.path.dirname(__file__), 'parameters/rgb/default.yaml')
+param_config = load_yaml(yaml_file)
+
+# Assign hyper parameters
+num_classes = param_config.get('dataset').get('num_classes')
+learning_rate = param_config.get('hyper_parameters').get('learning_rate')
+batch_size = param_config.get('hyper_parameters').get('batch_size')
+num_epochs = param_config.get('hyper_parameters').get('num_epochs')
+
+# Print parameters
+print_table({
+    'num_classes': num_classes,
+    'learning_rate': learning_rate,
+    'batch_size': batch_size,
+    'num_epochs': num_epochs,
+})
 
 # Load Data
 train_dataset = UtdMhadDataset(modality='sdfdi', train=True, transform=Compose([
