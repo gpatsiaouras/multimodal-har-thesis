@@ -5,7 +5,7 @@ import torch.nn as nn
 import torchvision.models as models
 from torch import optim
 from torch.utils.data import DataLoader
-from torchvision.transforms import Compose, CenterCrop, Resize, ToTensor
+from torchvision.transforms import Compose, Resize, ToTensor, RandomResizedCrop
 
 from datasets import UtdMhadDataset, UtdMhadDatasetConfig
 from tools import get_accuracy, save_model, get_confusion_matrix
@@ -21,20 +21,20 @@ num_epochs = 50
 
 # Load Data
 train_dataset = UtdMhadDataset(modality='sdfdi', train=True, transform=Compose([
-    Resize(256),
-    CenterCrop(224),
+    RandomResizedCrop(480),
+    Resize(224),
     ToTensor()
 ]))
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
 test_dataset = UtdMhadDataset(modality='sdfdi', train=False, transform=Compose([
-    Resize(256),
-    CenterCrop(224),
+    Resize(224),
     ToTensor()
 ]))
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
 
 # Model
-model = models.mobilenet_v2(num_classes=num_classes)
+model = models.mobilenet_v2(pretrained=True)
+model.classifier[1] = nn.Linear(model.last_channel, num_classes)
 model.name = 'mobilenet_v2'
 model.to(device)
 
