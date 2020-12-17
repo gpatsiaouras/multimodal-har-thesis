@@ -1,11 +1,13 @@
 from datasets import UtdMhadDataset
-from tools import generate_sdfdi
+from visualizers import frames_player
 
-from tools.optical_flow import print_sdfdi_image
+datasetSDFDI = UtdMhadDataset(modality='sdfdi', train=False)
+datasetRGB = UtdMhadDataset(modality='rgb', train=False)
 
-dataset = UtdMhadDataset(modality='rgb', train=False)
+# Retrieve one sample, the sample is already converted to an sdfdi image so just display it
+(sampleSDFDI, _) = datasetSDFDI[4]  # Subject 4, Action 1, Repetition 1
+(sampleRGB, _) = datasetRGB[4]  # Subject 4, Action 1, Repetition 1
 
-# Retrieve one sample
-(sample, _) = dataset[4]  # Subject 4, Action 1, Repetition 1
-sdfdi = generate_sdfdi(sample)
-print_sdfdi_image(sdfdi, continuous=False)
+# Play the video first to see the action being performed. And afterwards show the SDFDI equivalent
+frames_player(sampleRGB)
+sampleSDFDI.show()

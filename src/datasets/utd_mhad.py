@@ -35,7 +35,9 @@ def _create_jpg_image(jpg_filename, video_filename):
     :param jpg_filename: The filename to save the image to
     :param video_filename: The filename to read the video from
     """
-    # The jpg image doesn't exist, create it by invoking the sdfdi generation
+    # Create the directory of the SDFDI modality if not exists
+    if not os.path.isdir(os.path.dirname(jpg_filename)):
+        os.mkdir(os.path.dirname(jpg_filename))
     frames = _read_video(video_filename)
     # Generate SDFDI and save the image as jpg
     sdfdi = generate_sdfdi(frames)
@@ -74,15 +76,19 @@ class UtdMhadDataset(Dataset):
                         subject=subject,
                         repetition=repetition)
                     # Only include if the file exists. Some action/subject do not have 4 repetitions.
-                    # For the modality of RGB, we use SDFDI images. In that case if the file doesn't exist
+                    # For the modality of SDFDI in the case that the file doesn't exist
                     # it means that it has to be created by a generation process. Although if the original video file,
                     # doesn't exist then it's the same as above that the repetition probably doesn't exist
                     # and we ignore it
                     if os.path.isfile(filename):
                         self.filenames.append(filename)
                         self.labels.append(actionValue['file_id'])
-                    elif self.modality['folder_name'] == 'RGB':
-                        video_filename = filename[:-3] + 'avi'
+                    elif self.modality['folder_name'] == 'SDFDI':
+                        video_filename = self.dataset_config.get_filename(
+                            action=self.dataset_config.actions[actionKey],
+                            modality=self.dataset_config.modalities['rgb'],
+                            subject=subject,
+                            repetition=repetition)
                         if os.path.isfile(video_filename):
                             print('Item %s doesn\'t exist. Creating...' % filename)
                             _create_jpg_image(filename, video_filename)
@@ -102,6 +108,8 @@ class UtdMhadDataset(Dataset):
 
         if self.modality['file_ext'] == 'mat':
             data = self._read_inertial(idx)
+        elif self.modality['file_ext'] == 'avi':
+            data = _read_video(self.filenames[idx])
         elif self.modality['file_ext'] == 'jpg':
             data = self._read_image(idx)
         else:

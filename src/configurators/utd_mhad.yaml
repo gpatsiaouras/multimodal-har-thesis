@@ -55,6 +55,10 @@ modalities:
   rgb:
     folder_name: RGB
     file_alias: color
+    file_ext: avi
+  sdfdi:
+    folder_name: SDFDI
+    file_alias: sdfdi
     file_ext: jpg
 
 actions:

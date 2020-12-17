@@ -18,7 +18,7 @@ learning_rate = 0.0001
 num_epochs = 50
 
 # Load Data
-train_dataset = UtdMhadDataset(modality='rgb', train=True, transform=Compose([
+train_dataset = UtdMhadDataset(modality='sdfdi', train=True, transform=Compose([
     Resize(256),
     CenterCrop(224),
     ToTensor()
