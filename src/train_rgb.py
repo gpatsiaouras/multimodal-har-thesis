@@ -7,7 +7,9 @@ from torch import optim
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, CenterCrop, Resize, ToTensor
 
-from datasets import UtdMhadDataset
+from datasets import UtdMhadDataset, UtdMhadDatasetConfig
+from tools import get_accuracy, save_model, get_confusion_matrix
+from visualizers import plot_accuracy, plot_loss, plot_confusion_matrix
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -24,9 +26,16 @@ train_dataset = UtdMhadDataset(modality='sdfdi', train=True, transform=Compose([
     ToTensor()
 ]))
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+test_dataset = UtdMhadDataset(modality='sdfdi', train=False, transform=Compose([
+    Resize(256),
+    CenterCrop(224),
+    ToTensor()
+]))
+test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
 
 # Model
 model = models.mobilenet_v2(num_classes=num_classes)
+model.name = 'mobilenet_v2'
 model.to(device)
 
 # Loss and Optimizer
@@ -78,11 +87,30 @@ for epoch in range(num_epochs):
     # Train accuracy
     train_acc = float(num_correct) / float(num_samples) * 100
     train_accuracies.append(train_acc)
+    # Test accuracy
+    test_acc = get_accuracy(test_loader, model, device)
+    test_accuracies.append(test_acc)
     # Timing
     total_epoch_time = time.time() - epoch_start_time
     total_time = time.time() - start_time
     print('=== Epoch %d ===' % (epoch + 1))
     print('loss: %.3f' % train_loss)
     print('accuracy: %f' % train_acc)
+    print('test_accuracy: %f' % test_acc)
     print('epoch duration: %s' % time.strftime('%H:%M:%S', time.gmtime(total_epoch_time)))
     print('total duration until now: %s' % time.strftime('%H:%M:%S', time.gmtime(total_time)))
+
+# Save the model after finished training. Add the number of epochs and
+# batch size in the filename for clarity
+save_model(model, 'ep%d_bs%d.pt' % (num_epochs, batch_size))
+
+# plot results
+plot_accuracy(train_acc=train_accuracies, test_acc=test_accuracies, save=True)
+plot_loss(losses, save=True)
+plot_confusion_matrix(
+    cm=get_confusion_matrix(test_loader, model, device),
+    title='Confusion Matrix - Percentage %',
+    normalize=True,
+    save=True,
+    classes=UtdMhadDatasetConfig().get_class_names()
+)

@@ -44,16 +44,15 @@ def plot_inertial(data, title, y_label, save=False):
     :param save: Save figure to file
     """
     plt.style.use('seaborn-whitegrid')
-    plt.plot(data[:, 0], label='X')
-    plt.plot(data[:, 1], label='Y')
-    plt.plot(data[:, 2], label='Z')
-    plt.title(title)
-    plt.ylabel(y_label)
-    plt.xlabel('Timesteps')
-    plt.legend()
+    fig, ax = plt.subplots()
+    ax.plot(data[:, 0], label='X')
+    ax.plot(data[:, 1], label='Y')
+    ax.plot(data[:, 2], label='Z')
+    fig.set(title=title, ylabel=y_label, xlabel='Timesteps')
+    fig.legend()
     if save:
-        _save_plot('%s.png' % title.strip())
-    plt.show()
+        _save_plot(fig, '%s.png' % title.strip())
+    fig.show()
 
 
 def plot_accuracy(train_acc, test_acc=None, save=False):
@@ -64,16 +63,15 @@ def plot_accuracy(train_acc, test_acc=None, save=False):
     :param save: Save figure to file
     """
     plt.style.use('seaborn-whitegrid')
-    plt.plot(train_acc, label='Train')
+    fig, ax = plt.subplots()
+    ax.plot(train_acc, label='Train')
     if test_acc is not None:
-        plt.plot(test_acc, label='Test')
-    plt.title('Accuracy')
-    plt.ylabel('% of correct classification')
-    plt.xlabel('Epochs')
-    plt.legend()
+        ax.plot(test_acc, label='Test')
+    ax.set(title='Accuracy', ylabel='% of correct classification', xlabel='Epochs')
+    ax.legend()
     if save:
-        _save_plot('%s.png' % 'accu')
-    plt.show()
+        _save_plot(fig, '%s.png' % 'accu')
+    fig.show()
 
 
 def plot_loss(data, save=False):
@@ -83,14 +81,13 @@ def plot_loss(data, save=False):
     :param save: Save figure to file
     """
     plt.style.use('seaborn-whitegrid')
-    plt.plot(data, label='Loss')
-    plt.title('Training loss')
-    plt.ylabel('Loss')
-    plt.xlabel('Epochs')
-    plt.legend()
+    fig, ax = plt.subplots()
+    ax.plot(data, label='Loss')
+    ax.set(title='Training loss', ylabel='Loss', xlabel='Epochs')
+    ax.legend()
     if save:
-        _save_plot('%s.png' % 'loss')
-    plt.show()
+        _save_plot(fig, '%s.png' % 'loss')
+    fig.show()
 
 
 def plot_confusion_matrix(cm, classes, title='Confusion matrix', normalize=False, save=False,
@@ -100,30 +97,33 @@ def plot_confusion_matrix(cm, classes, title='Confusion matrix', normalize=False
         cm = cm * 100  # Make it percentage from 0-100%
 
     plt.style.use('default')
-    plt.figure(figsize=(11, 11))  # Set the size manually for the plot to be drawn correctly
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    plt.colorbar()
+    fig, ax = plt.subplots(figsize=(11, 11))  # Set the size manually for the plot to be drawn correctly
+    im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
+    ax.set(title=title, ylabel='True label', xlabel='Predicted label')
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=270)
-    plt.yticks(tick_marks, classes)
+    ax.set_xticks(tick_marks)
+    ax.set_xticklabels(classes)
+    ax.set_yticks(tick_marks)
+    ax.set_yticklabels(classes)
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, horizontalalignment='right')
 
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, int(cm[i, j]), horizontalalignment="center",
+        ax.text(j, i, int(cm[i, j]), horizontalalignment="center",
                  color="white" if cm[i, j] > thresh else "black")
 
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
+    fig.tight_layout()
     if save:
-        _save_plot('%s.png' % 'CM')
-    plt.show()
+        _save_plot(fig, '%s.png' % 'CM')
+    fig.show()
 
 
-def _save_plot(filename):
+def _save_plot(fig, filename):
     """
     Saves a plot to the 'plots' directory in the project root folder
+    :param fig: figure
     :param filename: filename with extension
     :return:
     """
@@ -132,4 +132,4 @@ def _save_plot(filename):
     filename = datetime + '_' + filename
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
-    plt.savefig(os.path.join(save_dir, filename))
+    fig.savefig(os.path.join(save_dir, filename))

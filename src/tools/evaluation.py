@@ -40,11 +40,10 @@ def get_confusion_matrix(data_loader, model, device):
     """
     # Set the model to inference mode
     model.eval()
-    all_predictions = torch.tensor([])
-    all_labels = torch.tensor([])
+    all_predictions = torch.tensor([], device=device)
+    all_labels = torch.tensor([], device=device)
 
     for (data, labels) in data_loader:
-        # Get data to cuda if possible
         data = data.to(device=device)
         labels = labels.to(device=device)
 
