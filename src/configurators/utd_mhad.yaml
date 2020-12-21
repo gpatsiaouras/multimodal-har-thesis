@@ -170,3 +170,46 @@ actions:
     file_id: 27
     description: squat (two arms stretch out)
     position: thigh
+
+joint_names:
+  - Head
+  - Shoulder Center
+  - Spine
+  - Hip Center
+  - Shoulder Left
+  - Elbow Left
+  - Wrist Left
+  - Hand Left
+  - Shoulder Right
+  - Elbow Right
+  - Wrist Right
+  - Hand Right
+  - Hip Left
+  - Knee Left
+  - Ankle Left
+  - Foot Left
+  - Hip Right
+  - Knee Right
+  - Ankle Right
+  - Foot Right
+
+bones:
+  - [0, 1]
+  - [1, 8]
+  - [8, 9]
+  - [9, 10]
+  - [10, 11]
+  - [1, 4]
+  - [4, 5]
+  - [5, 6]
+  - [6, 7]
+  - [1, 2]
+  - [2, 3]
+  - [3, 16]
+  - [16, 17]
+  - [17, 18]
+  - [18, 19]
+  - [3, 12]
+  - [12, 13]
+  - [13, 14]
+  - [14, 15]
