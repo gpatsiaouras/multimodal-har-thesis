@@ -4,7 +4,6 @@ import torch
 import torch.nn.functional as functional
 
 from configurators import UtdMhadDatasetConfig
-# TODO check this before submitting, why does it need relative import?
 from .model_tools import save_model
 from visualizers import plot_confusion_matrix, plot_loss, plot_accuracy
 
@@ -84,7 +83,7 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
         # Timing
         total_epoch_time = time.time() - epoch_start_time
         total_time = time.time() - start_time
-        print('\n=== Epoch %d ===' % (epoch + 1))
+        print('\n=== Epoch %d/%d ===' % (epoch + 1, num_epochs))
         print('loss: %.3f' % train_loss)
         print('accuracy: %f' % train_acc)
         print('test_accuracy: %f' % test_acc)
@@ -187,13 +186,11 @@ def get_confusion_matrix(data_loader, model, device):
 
 
 def _forward(model, data, h, c):
-    if model.name is 'bigru':
-        h = model.init_hidden()
-        out, _ = model(data, h.data)
+    if model.name is 'gru':
+        out, h = model(data, h.data)
         return out, h, None
     elif model.name is 'lstm':
-        h, c = model.init_hidden()
-        out, _, _ = model(data, h.data, c.data)
+        out, h, c = model(data, h.data, c.data)
         return out, h, c
     else:
         out = model(data)

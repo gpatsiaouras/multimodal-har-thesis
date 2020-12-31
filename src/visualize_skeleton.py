@@ -2,9 +2,30 @@ from datasets import UtdMhadDataset, UtdMhadDatasetConfig
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-dataset_config = UtdMhadDatasetConfig()
-train_dataset = UtdMhadDataset(modality='skeleton', train=True)
+from transforms import Resize, SwapJoints, Normalize, Compose
 
+dataset_config = UtdMhadDatasetConfig()
+
+# Parameters (change accordingly)
+n_frames = 125
+normalize = True
+continuous = True
+fix_view_point = False
+
+train_dataset = UtdMhadDataset(modality='skeleton', train=True, transform=Compose([
+    SwapJoints(),
+    Normalize((1, 2)),
+]))
+
+# set limits to display properly, or if dataset is normalized use just 0 and 1
+x_lim_min = -0.35 if not normalize else 0
+x_lim_max = 0.52 if not normalize else 1
+y_lim_min = 2.2 if not normalize else 0
+y_lim_max = 3.0 if not normalize else 1
+z_lim_min = -1.1 if not normalize else 0
+z_lim_max = 0.55 if not normalize else 1
+
+# Choose a sample from the dataset. 0 sample is first action which swipe right
 sample, _ = train_dataset[0]
 
 fig = plt.figure()
@@ -38,34 +59,41 @@ def update_joints(frame):
     ax.clear()
     # Re-set limits to keep axis from moving
     ax.set_xlabel('X')
-    ax.set_xlim(-0.35, 0.52)
+    ax.set_xlim(x_lim_min, x_lim_max)
     ax.set_ylabel('Z')
-    ax.set_ylim(2.2, 3.0)
+    ax.set_ylim(y_lim_min, y_lim_max)
     ax.set_zlabel('Y')
-    ax.set_zlim(-1.1, 0.55)
-    ax.view_init(20, -50)
+    ax.set_zlim(z_lim_min, z_lim_max)
+
+    if fix_view_point:
+        ax.view_init(20, -50)
+
     # Print joints as points
-    ax.scatter(sample[:, 0, frame], sample[:, 2, frame], sample[:, 1, frame])
+    ax.scatter(sample[0, :, frame], sample[2, :, frame], sample[1, :, frame])
     # Print the index of each joint next to it
-    for i in range(sample.shape[0]):
+    for i in range(sample.shape[1]):
         ax.text(
-            sample[i, 0, frame],
-            sample[i, 2, frame],
-            sample[i, 1, frame],
+            sample[0, i, frame],
+            sample[2, i, frame],
+            sample[1, i, frame],
             str(dataset_config.joint_names[i]),
             size='x-small'
         )
     # Print lines connecting the joints
     for bone in dataset_config.bones:
         ax.plot(
-            [sample[bone[0], 0, frame], sample[bone[1], 0, frame]],
-            [sample[bone[0], 2, frame], sample[bone[1], 2, frame]],
-            [sample[bone[0], 1, frame], sample[bone[1], 1, frame]],
+            [sample[0, bone[0], frame], sample[0, bone[1], frame]],
+            [sample[2, bone[0], frame], sample[2, bone[1], frame]],
+            [sample[1, bone[0], frame], sample[1, bone[1], frame]],
         )
 
 
-joints_anim = animation.FuncAnimation(fig,
-                                      func=update_joints,
-                                      frames=sample.shape[2],
-                                      interval=200)
+if continuous:
+    joints_anim = animation.FuncAnimation(fig,
+                                          func=update_joints,
+                                          frames=sample.shape[2],
+                                          interval=200)
+else:
+    update_joints(0)
+
 plt.show()
