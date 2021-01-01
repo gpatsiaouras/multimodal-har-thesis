@@ -1,5 +1,8 @@
+import random
+
 import numpy as np
 from scipy import signal
+from scipy.spatial.transform import Rotation as R
 
 
 class Resize:
@@ -21,7 +24,7 @@ class Resize:
         if diff > 0:
             starting_point = diff // 2
             result = np.zeros((x.shape[0], x.shape[1], self.size))
-            result[:, :, starting_point:starting_point+x.shape[2]] = x
+            result[:, :, starting_point:starting_point + x.shape[2]] = x
         elif diff < 0:
             result = signal.resample(x, self.size, axis=2)
         else:
@@ -83,3 +86,15 @@ class Normalize:
         x_max = x.max(axis=self.axis, keepdims=True)
 
         return (x - x_min) / (x_max - x_min)
+
+
+class RandomEulerRotation:
+    def __init__(self):
+        self.degrees = [0, 30, 45, 60, 90]
+
+    def __call__(self, x):
+        rotate_to = random.choice(self.degrees)
+        rotation = R.from_euler('xy', (rotate_to, rotate_to), degrees=True)
+        for frame_idx in range(x.shape[2]):
+            x[:, :, frame_idx] = rotation.apply(x[:, :, frame_idx])
+        return x

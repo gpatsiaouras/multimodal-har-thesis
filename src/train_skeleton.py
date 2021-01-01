@@ -1,12 +1,15 @@
+import os
+import sys
+
 import torch
 import torch.nn as nn
 from torch import optim
 from torch.utils.data import DataLoader
 
 from datasets import UtdMhadDataset
-from tools import train
 from models import BiGRU
-from transforms import Resize, Compose, ToSequence, FilterJoints, Normalize, SwapJoints
+from tools import train, load_yaml
+from transforms import Resize, Compose, ToSequence, FilterJoints, Normalize, RandomEulerRotation
 from visualizers import print_table
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -14,22 +17,27 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Seed number generator
 torch.manual_seed(0)
 
-# Assign hyper parameters
-num_classes = 27
-batch_size = 32
-num_epochs = 350
-learning_rate = 0.001
+# Load parameters from yaml file.
+if len(sys.argv) == 2:
+    yaml_file = sys.argv[1]
+else:
+    yaml_file = os.path.join(os.path.dirname(__file__), 'parameters/skeleton/default.yaml')
+param_config = load_yaml(yaml_file)
+
+# Assign training hyper parameters
+learning_rate = param_config.get('training').get('learning_rate')
+batch_size = param_config.get('training').get('batch_size')
+num_epochs = param_config.get('training').get('num_epochs')
 
 # Data related
-# head, left elbow, left hand, right elbow, right hand, left knee, left foot, right knee and right foot
-selected_joints = [0, 5, 7, 9, 11, 13, 15, 17, 19]
-# Resize (and add padding) to exactly 125 frames
-num_frames = 41
+num_classes = param_config.get('dataset').get('num_classes')
+selected_joints = param_config.get('dataset').get('selected_joints')
+num_frames = param_config.get('dataset').get('num_frames')
 
 # Model params
-hidden_size = 128
-num_layers = 2
-input_size = len(selected_joints)  # nine joints
+hidden_size = param_config.get('model').get('hidden_size')
+num_layers = param_config.get('model').get('num_layers')
+input_size = len(selected_joints)  # number of joints as input size
 sequence_length = num_frames * 3  # features(frames) x 3 dimensions xyz per frame
 
 # Print parameters
@@ -50,6 +58,7 @@ train_dataset = UtdMhadDataset(modality='skeleton', train=True, transform=Compos
     Normalize((0, 2)),
     Resize(num_frames),
     FilterJoints(selected_joints),
+    RandomEulerRotation(),
     ToSequence(sequence_length, input_size)
 ]))
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
@@ -67,6 +76,5 @@ model = BiGRU(batch_size, input_size, hidden_size, num_layers, num_classes, devi
 # Loss and Optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.RMSprop(model.parameters(), lr=learning_rate)
-
 
 train(model, criterion, optimizer, train_loader, test_loader, num_epochs, batch_size, device)
