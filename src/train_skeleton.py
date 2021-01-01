@@ -17,7 +17,7 @@ torch.manual_seed(0)
 # Assign hyper parameters
 num_classes = 27
 batch_size = 32
-num_epochs = 100
+num_epochs = 350
 learning_rate = 0.001
 
 # Data related
@@ -50,18 +50,16 @@ train_dataset = UtdMhadDataset(modality='skeleton', train=True, transform=Compos
     Normalize((0, 2)),
     Resize(num_frames),
     FilterJoints(selected_joints),
-    # SwapJoints(),
     ToSequence(sequence_length, input_size)
 ]))
-train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
+train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 test_dataset = UtdMhadDataset(modality='skeleton', train=False, transform=Compose([
     Normalize((0, 2)),
     Resize(num_frames),
     FilterJoints(selected_joints),
-    # SwapJoints(),
     ToSequence(sequence_length, input_size)
 ]))
-test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
+test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 
 # Model
 model = BiGRU(batch_size, input_size, hidden_size, num_layers, num_classes, device).to(device)

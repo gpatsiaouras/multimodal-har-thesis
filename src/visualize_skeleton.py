@@ -2,20 +2,22 @@ from datasets import UtdMhadDataset, UtdMhadDatasetConfig
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-from transforms import Resize, SwapJoints, Normalize, Compose
+from transforms import Normalize
 
 dataset_config = UtdMhadDatasetConfig()
 
 # Parameters (change accordingly)
 n_frames = 125
-normalize = True
+normalize = False
 continuous = True
 fix_view_point = False
 
-train_dataset = UtdMhadDataset(modality='skeleton', train=True, transform=Compose([
-    SwapJoints(),
-    Normalize((1, 2)),
-]))
+if normalize:
+    transform = Normalize((0, 2))
+else:
+    transform = None
+
+train_dataset = UtdMhadDataset(modality='skeleton', train=True, transform=transform)
 
 # set limits to display properly, or if dataset is normalized use just 0 and 1
 x_lim_min = -0.35 if not normalize else 0
@@ -69,22 +71,22 @@ def update_joints(frame):
         ax.view_init(20, -50)
 
     # Print joints as points
-    ax.scatter(sample[0, :, frame], sample[2, :, frame], sample[1, :, frame])
+    ax.scatter(sample[:, 0, frame], sample[:, 2, frame], sample[:, 1, frame])
     # Print the index of each joint next to it
-    for i in range(sample.shape[1]):
+    for i in range(sample.shape[0]):
         ax.text(
-            sample[0, i, frame],
-            sample[2, i, frame],
-            sample[1, i, frame],
+            sample[i, 0, frame],
+            sample[i, 2, frame],
+            sample[i, 1, frame],
             str(dataset_config.joint_names[i]),
             size='x-small'
         )
     # Print lines connecting the joints
     for bone in dataset_config.bones:
         ax.plot(
-            [sample[0, bone[0], frame], sample[0, bone[1], frame]],
-            [sample[2, bone[0], frame], sample[2, bone[1], frame]],
-            [sample[1, bone[0], frame], sample[1, bone[1], frame]],
+            [sample[bone[0], 0, frame], sample[bone[1], 0, frame]],
+            [sample[bone[0], 2, frame], sample[bone[1], 2, frame]],
+            [sample[bone[0], 1, frame], sample[bone[1], 1, frame]],
         )
 
 

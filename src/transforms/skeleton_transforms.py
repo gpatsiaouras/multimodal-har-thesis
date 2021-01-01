@@ -83,13 +83,3 @@ class Normalize:
         x_max = x.max(axis=self.axis, keepdims=True)
 
         return (x - x_min) / (x_max - x_min)
-
-
-class SwapJoints:
-    """
-    Converts from (joints) x (axis) x (frames) to (axis) × (joints) × (frames).
-    When used, to normalize use "Normalize((1, 2))" else "Normalize((0, 2))"
-    """
-
-    def __call__(self, x):
-        return x.swapaxes(0, 1)
