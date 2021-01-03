@@ -68,7 +68,7 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
             # gradient descent or adam step
             optimizer.step()
 
-            running_loss += loss
+            running_loss += loss.item()
 
         # print statistics
         # Loss
