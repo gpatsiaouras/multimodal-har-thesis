@@ -11,15 +11,19 @@ class BiGRU(nn.Module):
         self.device = device
         self.num_directions = 2  # bidirectional=True
         self.bigru = nn.GRU(input_size, hidden_size, num_layers, batch_first=True,
-                            bidirectional=self.num_directions == 2, dropout=0.8)
-        self.fc = nn.Linear(hidden_size * self.num_directions, num_classes)
+                            bidirectional=self.num_directions == 2)
+        self.dropout = nn.Dropout(p=0.8, inplace=True)
+        self.fc1 = nn.Linear(hidden_size * self.num_directions, 2048)
+        self.fc2 = nn.Linear(2048, num_classes)
 
     def forward(self, x, h):
         out, h = self.bigru(x, h)
         # Retrieve only the last state => results to (batch_size, hidden_size)
         out = out[:, -1, :]
-        # Forward to fully connected layer
-        out = self.fc(out)
+        # Forward to fully connected layers
+        out = self.fc1(out)
+        out = self.dropout(out)
+        out = self.fc2(out)
 
         return out, h
 

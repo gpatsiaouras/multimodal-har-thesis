@@ -4,6 +4,8 @@ import numpy as np
 from scipy import signal
 from scipy.spatial.transform import Rotation as R
 
+random.seed(0)
+
 
 class Resize:
     def __init__(self, size=125):
@@ -89,11 +91,17 @@ class Normalize:
 
 
 class RandomEulerRotation:
-    def __init__(self):
-        self.degrees = [0, 30, 45, 60, 90]
+    """
+    Data augmentation transform, applies a random rotation of -5, 0 or 5 degrees (by default) in the x,y axis of
+    every joint in the skeleton.
+    """
+    def __init__(self, start=-5, end=5, step=5):
+        self.start = start
+        self.end = end
+        self.step = step
 
     def __call__(self, x):
-        rotate_to = random.choice(self.degrees)
+        rotate_to = random.randrange(self.start, self.end + 1, self.step)
         rotation = R.from_euler('xy', (rotate_to, rotate_to), degrees=True)
         for frame_idx in range(x.shape[2]):
             x[:, :, frame_idx] = rotation.apply(x[:, :, frame_idx])

@@ -2,13 +2,13 @@ from datasets import UtdMhadDataset, UtdMhadDatasetConfig
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-from transforms import Normalize
+from transforms import Normalize, RandomEulerRotation, Compose
 
 dataset_config = UtdMhadDatasetConfig()
 
 # Parameters (change accordingly)
 n_frames = 125
-normalize = False
+normalize = True
 continuous = True
 fix_view_point = False
 
@@ -17,7 +17,10 @@ if normalize:
 else:
     transform = None
 
-train_dataset = UtdMhadDataset(modality='skeleton', train=True, transform=transform)
+train_dataset = UtdMhadDataset(modality='skeleton', train=True, transform=Compose([
+    RandomEulerRotation(-5, 5, 5),
+    Normalize((0, 2))
+]))
 
 # set limits to display properly, or if dataset is normalized use just 0 and 1
 x_lim_min = -0.35 if not normalize else 0

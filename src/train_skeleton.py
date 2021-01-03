@@ -58,7 +58,7 @@ train_dataset = UtdMhadDataset(modality='skeleton', train=True, transform=Compos
     Normalize((0, 2)),
     Resize(num_frames),
     FilterJoints(selected_joints),
-    RandomEulerRotation(),
+    RandomEulerRotation(-5, 5, 5),
     ToSequence(sequence_length, input_size)
 ]))
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
