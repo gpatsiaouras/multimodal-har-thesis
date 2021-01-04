@@ -33,7 +33,7 @@ model = CNN1D().to(device)
 model.load_state_dict(torch.load(sys.argv[1]))
 model.eval()
 
-print('Test Accuracy: %d' % get_accuracy(test_loader, model, device))
+print('Test Accuracy: %f' % get_accuracy(test_loader, model, device))
 plot_confusion_matrix(
     cm=get_confusion_matrix(test_loader, model, device),
     title='Confusion Matrix - Percentage %',

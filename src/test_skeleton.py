@@ -39,7 +39,7 @@ test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=Tr
 model = BiGRU(batch_size, input_size, hidden_size, num_layers, num_classes, device).to(device)
 model.load_state_dict(torch.load(sys.argv[1]))
 
-print('Test Accuracy: %d' % get_accuracy(test_loader, model, device))
+print('Test Accuracy: %f' % get_accuracy(test_loader, model, device))
 plot_confusion_matrix(
     cm=get_confusion_matrix(test_loader, model, device),
     title='Confusion Matrix - Percentage %',

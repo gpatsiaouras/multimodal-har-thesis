@@ -31,11 +31,16 @@ test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=Tr
 # Reinitialise model, and load weights from file
 model = models.mobilenet_v2(pretrained=True)
 model.name = 'mobilenet_v2'
-model.classifier[1] = nn.Linear(model.last_channel, num_classes)
+model.classifier = nn.Sequential(
+    nn.Dropout(p=0.2, inplace=False),
+    nn.Linear(model.last_channel, 2048),
+    nn.Linear(2048, num_classes)
+)
+
 model.to(device)
 model.load_state_dict(torch.load(sys.argv[1]))
 
-print('Test Accuracy: %d' % get_accuracy(test_loader, model, device))
+print('Test Accuracy: %f' % get_accuracy(test_loader, model, device))
 plot_confusion_matrix(
     cm=get_confusion_matrix(test_loader, model, device),
     title='Confusion Matrix - Percentage %',

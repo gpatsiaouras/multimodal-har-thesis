@@ -53,7 +53,11 @@ test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=Tr
 
 # Model
 model = models.mobilenet_v2(pretrained=True)
-model.classifier[1] = nn.Linear(model.last_channel, num_classes)
+model.classifier = nn.Sequential(
+    nn.Dropout(p=0.2, inplace=False),
+    nn.Linear(model.last_channel, 2048),
+    nn.Linear(2048, num_classes)
+)
 model.name = 'mobilenet_v2'
 model.to(device)
 
