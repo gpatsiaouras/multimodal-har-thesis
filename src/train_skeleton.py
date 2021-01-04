@@ -7,7 +7,7 @@ from torch import optim
 from torch.utils.data import DataLoader
 
 from datasets import UtdMhadDataset
-from models import BiGRU
+from models import BiGRU, BiLSTM
 from tools import train, load_yaml
 from transforms import Resize, Compose, ToSequence, FilterJoints, Normalize, RandomEulerRotation
 from visualizers import print_table
@@ -35,6 +35,7 @@ selected_joints = param_config.get('dataset').get('selected_joints')
 num_frames = param_config.get('dataset').get('num_frames')
 
 # Model params
+model_type = param_config.get('model').get('model_type')
 hidden_size = param_config.get('model').get('hidden_size')
 num_layers = param_config.get('model').get('num_layers')
 input_size = len(selected_joints)  # number of joints as input size
@@ -46,9 +47,10 @@ print_table({
     'learning_rate': learning_rate,
     'batch_size': batch_size,
     'num_epochs': num_epochs,
+    'num_frames': num_frames,
+    'model_type': model_type,
     'hidden_size': hidden_size,
     'num_layers': num_layers,
-    'num_frames': num_frames,
     'input_size': input_size,
     'sequence_length': sequence_length,
 })
@@ -71,7 +73,10 @@ test_dataset = UtdMhadDataset(modality='skeleton', train=False, transform=Compos
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 
 # Model
-model = BiGRU(batch_size, input_size, hidden_size, num_layers, num_classes, device).to(device)
+if model_type is 'lstm':
+    model = BiLSTM(batch_size, input_size, hidden_size, num_layers, num_classes, device).to(device)
+else:
+    model = BiGRU(batch_size, input_size, hidden_size, num_layers, num_classes, device).to(device)
 
 # Loss and Optimizer
 criterion = nn.CrossEntropyLoss()

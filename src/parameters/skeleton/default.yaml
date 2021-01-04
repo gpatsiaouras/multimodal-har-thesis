@@ -10,5 +10,6 @@ training:
   num_epochs: 350
 
 model:
+  model_type: 'gru'
   hidden_size: 128
   num_layers: 2
