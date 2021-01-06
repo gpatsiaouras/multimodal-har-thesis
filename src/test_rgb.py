@@ -1,12 +1,11 @@
 import sys
 
 import torch
-import torch.nn as nn
-import torchvision.models as models
 from torch.utils.data import DataLoader
 from torchvision.transforms import Resize, ToTensor, Compose
 
 from datasets import UtdMhadDataset, UtdMhadDatasetConfig
+from models import MobileNetV2
 from tools import get_accuracy, get_confusion_matrix
 # Check that saved model was given
 from visualizers import plot_confusion_matrix
@@ -29,15 +28,7 @@ test_dataset = UtdMhadDataset(modality='sdfdi', train=False, transform=Compose([
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
 
 # Reinitialise model, and load weights from file
-model = models.mobilenet_v2(pretrained=True)
-model.name = 'mobilenet_v2'
-model.classifier = nn.Sequential(
-    nn.Dropout(p=0.2, inplace=False),
-    nn.Linear(model.last_channel, 2048),
-    nn.Linear(2048, num_classes)
-)
-
-model.to(device)
+model = MobileNetV2(num_classes).to(device)
 model.load_state_dict(torch.load(sys.argv[1]))
 
 print('Test Accuracy: %f' % get_accuracy(test_loader, model, device))

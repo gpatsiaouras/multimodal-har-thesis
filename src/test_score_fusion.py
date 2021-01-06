@@ -1,14 +1,12 @@
 import sys
 
 import torch
-import torch.nn as nn
 import torchvision
-import torchvision.models as models
 from prettytable import PrettyTable
 from torch.utils.data import DataLoader
 
 from datasets import UtdMhadDataset, UtdMhadDatasetConfig
-from models import CNN1D, BiGRU
+from models import CNN1D, BiGRU, MobileNetV2
 from tools import get_score_fusion_accuracy, get_confusion_matrix_multiple_models, plot_confusion_matrix
 from transforms import Compose, Sampler, FilterDimensions, Flatten, Normalize, FilterJoints, ToSequence, Resize
 
@@ -47,14 +45,7 @@ if len(sys.argv) > 1:
     inertial_included = True
 
 if len(sys.argv) > 2:
-    model_rgb = models.mobilenet_v2(pretrained=True)
-    model_rgb.name = 'mobilenet_v2'
-    model_rgb.classifier = nn.Sequential(
-        nn.Dropout(p=0.2, inplace=False),
-        nn.Linear(model_rgb.last_channel, 2048),
-        nn.Linear(2048, num_classes)
-    )
-    model_rgb.to(device)
+    model_rgb = MobileNetV2(num_classes).to(device)
     model_rgb.load_state_dict(torch.load(sys.argv[2]))
 
     test_dataset_rgb = UtdMhadDataset(modality='sdfdi', train=False, transform=Compose([

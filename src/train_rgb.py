@@ -3,12 +3,12 @@ import sys
 
 import torch
 import torch.nn as nn
-import torchvision.models as models
 from torch import optim
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, Resize, ToTensor, RandomResizedCrop
 
 from datasets import UtdMhadDataset
+from models import MobileNetV2
 from tools import load_yaml, train
 from visualizers import print_table
 
@@ -52,14 +52,7 @@ test_dataset = UtdMhadDataset(modality='sdfdi', train=False, transform=Compose([
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
 
 # Model
-model = models.mobilenet_v2(pretrained=True)
-model.classifier = nn.Sequential(
-    nn.Dropout(p=0.2, inplace=False),
-    nn.Linear(model.last_channel, 2048),
-    nn.Linear(2048, num_classes)
-)
-model.name = 'mobilenet_v2'
-model.to(device)
+model = MobileNetV2(num_classes).to(device)
 
 # Loss and Optimizer
 criterion = nn.CrossEntropyLoss()
