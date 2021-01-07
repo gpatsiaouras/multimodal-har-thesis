@@ -24,11 +24,11 @@ class CNN1D(nn.Module):
         self.batchNorm5 = nn.BatchNorm1d(512)
         self.flatten = nn.Flatten()
 
-        self.fc1 = nn.Linear(512*8, 2048)
+        self.fc1 = nn.Linear(512 * 8, 2048)
         self.fc2 = nn.Linear(2048, 2048)
         self.fc3 = nn.Linear(2048, 27)
 
-    def forward(self, x):
+    def forward(self, x, skip_last_fc=False):
         # Add a dimension in the middle because we only have one channel of data
         x = x.unsqueeze(1)
 
@@ -48,7 +48,8 @@ class CNN1D(nn.Module):
         x = self.fc1(x)
         x = self.dropout(x)
         x = self.fc2(x)
-        x = self.dropout(x)
-        x = self.fc3(x)
+        if not skip_last_fc:
+            x = self.dropout(x)
+            x = self.fc3(x)
 
         return x

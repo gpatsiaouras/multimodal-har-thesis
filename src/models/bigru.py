@@ -16,14 +16,16 @@ class BiGRU(nn.Module):
         self.fc1 = nn.Linear(hidden_size * self.num_directions, 2048)
         self.fc2 = nn.Linear(2048, num_classes)
 
-    def forward(self, x, h):
+    def forward(self, x, h, skip_last_fc=False):
         out, h = self.bigru(x, h)
         # Retrieve only the last state => results to (batch_size, hidden_size)
         out = out[:, -1, :]
         # Forward to fully connected layers
         out = self.fc1(out)
-        out = self.dropout(out)
-        out = self.fc2(out)
+
+        if not skip_last_fc:
+            out = self.dropout(out)
+            out = self.fc2(out)
 
         return out, h
 
