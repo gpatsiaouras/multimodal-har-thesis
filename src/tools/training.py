@@ -173,13 +173,14 @@ def get_confusion_matrix_multiple_models(data_loaders, models, device):
 
 
 @torch.no_grad()
-def get_predictions(data_loader, model, device):
+def get_predictions(data_loader, model, device, skip_last_fc=False):
     """
     Receives a dataloader a model and a device, runs all the batches to get the predictions
     and returns a tensor with all the predictions and corresponding labels for every sample of the dataset
     :param data_loader: Data loader
     :param model: Model
     :param device: Device to be used
+    :param skip_last_fc: whether to return the 2048 vector instead of scores
     :return: predictions, labels
     """
     # Set the model to inference mode
@@ -199,10 +200,13 @@ def get_predictions(data_loader, model, device):
 
     for (data, labels) in data_loader:
         data = data.float().to(device=device)
-        labels = labels.to(device=device)
+        labels = labels.float().to(device=device)
 
-        out, _, _ = _forward(model, data, h, c)
-        scores = functional.softmax(out, 1)
+        out, _, _ = _forward(model, data, h, c, skip_last_fc)
+        if skip_last_fc:
+            scores = out
+        else:
+            scores = functional.softmax(out, 1)
         all_predictions = torch.cat((all_predictions, scores), dim=0)
         all_labels = torch.cat((all_labels, labels), dim=0)
 
@@ -219,21 +223,22 @@ def get_num_correct_predictions(scores, labels):
     return int((labels.argmax(1) == scores.argmax(1)).sum())
 
 
-def _forward(model, data, h, c):
+def _forward(model, data, h, c, skip_last_fc=False):
     """
     Performs a forward pass based on the model given. It automatically handles LSTM, GRU, CNN and other networks.
     :param model: Model to use forward
     :param data: input
     :param h: hidden layer
     :param c: c layer (for lstm)
+    :param skip_last_fc: whether to return the 2048 vector instead of scores
     :return: scores
     """
     if model.name is 'gru':
-        out, h = model(data, h.data)
+        out, h = model(data, h.data, skip_last_fc)
         return out, h, None
     elif model.name is 'lstm':
-        out, h, c = model(data, h.data, c.data)
+        out, h, c = model(data, h.data, c.data, skip_last_fc)
         return out, h, c
     else:
-        out = model(data)
+        out = model(data, skip_last_fc)
         return out, None, None
