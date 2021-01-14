@@ -48,7 +48,7 @@ def plot_inertial(data, title, y_label, save=False):
     ax.plot(data[:, 0], label='X')
     ax.plot(data[:, 1], label='Y')
     ax.plot(data[:, 2], label='Z')
-    fig.set(title=title, ylabel=y_label, xlabel='Timesteps')
+    ax.set(title=title, ylabel=y_label, xlabel='Timesteps')
     fig.legend()
     if save:
         _save_plot(fig, '%s.png' % title.strip())
