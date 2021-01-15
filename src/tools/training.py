@@ -34,14 +34,6 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
         num_samples = 0
         epoch_start_time = time.time()
 
-        # Preparing steps for RNN type of networks
-        h = None
-        c = None
-        if model.name is 'gru':
-            h = model.init_hidden()
-        elif model.name is 'lstm':
-            h, c = model.init_hidden()
-
         # Iterate mini batches
         for batch_idx, (data, labels) in enumerate(train_loader):
             # Turn inference mode off (in case)
@@ -51,7 +43,7 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
             labels = labels.to(device)
 
             # forward
-            scores, h, c = _forward(model, data, h, c)
+            scores = model(data)
 
             _, input_indices = torch.max(labels, dim=1)
             loss = criterion(scores, input_indices)
@@ -64,6 +56,8 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
             # backward
             optimizer.zero_grad()
             loss.backward()
+            if model.name == 'gru' or model.name == 'lstm':
+                torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=1)
 
             # gradient descent or adam step
             optimizer.step()
@@ -190,19 +184,11 @@ def get_predictions(data_loader, model, device, skip_last_fc=False):
     all_predictions = torch.tensor([], device=device)
     all_labels = torch.tensor([], device=device)
 
-    # Preparing steps for RNN type of networks
-    h = None
-    c = None
-    if model.name is 'gru':
-        h = model.init_hidden()
-    elif model.name is 'lstm':
-        h, c = model.init_hidden()
-
     for (data, labels) in data_loader:
-        data = data.float().to(device=device)
+        data = data.to(device).float()
         labels = labels.float().to(device=device)
 
-        out, _, _ = _forward(model, data, h, c, skip_last_fc)
+        out = model(data, skip_last_fc)
         if skip_last_fc:
             scores = out
         else:
@@ -221,24 +207,3 @@ def get_num_correct_predictions(scores, labels):
     :return: number of correct predictions
     """
     return int((labels.argmax(1) == scores.argmax(1)).sum())
-
-
-def _forward(model, data, h, c, skip_last_fc=False):
-    """
-    Performs a forward pass based on the model given. It automatically handles LSTM, GRU, CNN and other networks.
-    :param model: Model to use forward
-    :param data: input
-    :param h: hidden layer
-    :param c: c layer (for lstm)
-    :param skip_last_fc: whether to return the 2048 vector instead of scores
-    :return: scores
-    """
-    if model.name is 'gru':
-        out, h = model(data, h.data, skip_last_fc)
-        return out, h, None
-    elif model.name is 'lstm':
-        out, h, c = model(data, h.data, c.data, skip_last_fc)
-        return out, h, c
-    else:
-        out = model(data, skip_last_fc)
-        return out, None, None

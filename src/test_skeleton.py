@@ -26,17 +26,22 @@ selected_joints = [0, 5, 7, 9, 11, 13, 15, 17, 19]
 input_size = len(selected_joints)  # number of joints as input size
 sequence_length = num_frames * 3  # features(frames) x 3 dimensions xyz per frame
 
+utdMhadConfig = UtdMhadDatasetConfig()
+mean = utdMhadConfig.modalities['skeleton']['mean']
+std = utdMhadConfig.modalities['skeleton']['std']
+normalizeSkeleton = Normalize('skeleton', mean, std)
+
 # Load test dataset
 test_dataset = UtdMhadDataset(modality='skeleton', train=False, transform=Compose([
-    Normalize((0, 2)),
+    normalizeSkeleton,
     Resize(num_frames),
     FilterJoints(selected_joints),
     ToSequence(sequence_length, input_size)
 ]))
-test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
 
 # Reinitialise model, and load weights from file
-model = BiGRU(batch_size, input_size, hidden_size, num_layers, num_classes, device).to(device)
+model = BiGRU(input_size, hidden_size, num_layers, num_classes, device).to(device)
 model.load_state_dict(torch.load(sys.argv[1]))
 
 print('Test Accuracy: %f' % get_accuracy(test_loader, model, device))

@@ -22,13 +22,13 @@ class Resize:
         :param x: ndarray
         :return: ndarray
         """
-        diff = self.size - x.shape[2]
+        diff = self.size - x.shape[0]
         if diff > 0:
             starting_point = diff // 2
-            result = np.zeros((x.shape[0], x.shape[1], self.size))
-            result[:, :, starting_point:starting_point + x.shape[2]] = x
+            result = np.zeros((self.size, x.shape[1], x.shape[2],))
+            result[:, :, starting_point:starting_point + x.shape[0]] = x
         elif diff < 0:
-            result = signal.resample(x, self.size, axis=2)
+            result = signal.resample(x, self.size)
         else:
             result = x
         return result
@@ -52,7 +52,7 @@ class FilterJoints:
         :param x: ndarray
         :return: ndarray
         """
-        return x[self.joints]
+        return x[:, self.joints]
 
 
 class ToSequence:
@@ -70,24 +70,8 @@ class ToSequence:
         :param x: ndarray
         :return: ndarray
         """
-        x = x.flatten()
         x = x.reshape(self.sequence_length, self.input_size)
         return x
-
-
-class Normalize:
-    """
-    Normalizes a sample to 0, 1 values.
-    """
-
-    def __init__(self, axis):
-        self.axis = axis
-
-    def __call__(self, x):
-        x_min = x.min(axis=self.axis, keepdims=True)
-        x_max = x.max(axis=self.axis, keepdims=True)
-
-        return (x - x_min) / (x_max - x_min)
 
 
 class RandomEulerRotation:
@@ -95,6 +79,7 @@ class RandomEulerRotation:
     Data augmentation transform, applies a random rotation of -5, 0 or 5 degrees (by default) in the x,y axis of
     every joint in the skeleton.
     """
+
     def __init__(self, start=-5, end=5, step=5):
         self.start = start
         self.end = end
@@ -103,6 +88,6 @@ class RandomEulerRotation:
     def __call__(self, x):
         rotate_to = random.randrange(self.start, self.end + 1, self.step)
         rotation = R.from_euler('xy', (rotate_to, rotate_to), degrees=True)
-        for frame_idx in range(x.shape[2]):
-            x[:, :, frame_idx] = rotation.apply(x[:, :, frame_idx])
+        for frame_idx in range(x.shape[0]):
+            x[frame_idx, :, :] = rotation.apply(x[frame_idx, :, :])
         return x

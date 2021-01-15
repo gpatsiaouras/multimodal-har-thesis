@@ -6,13 +6,14 @@ import torch.nn as nn
 from torch import optim
 from torch.utils.data import DataLoader
 
+from configurators import UtdMhadDatasetConfig
 from datasets import UtdMhadDataset
 from models import CNN1D
 from tools import load_yaml, train
-from transforms import Sampler, Compose, Flatten, FilterDimensions, Jittering
+from transforms import Compose, Flatten, FilterDimensions, Jittering, Sampler, Normalize
 from visualizers import print_table
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 
 # Seed number generator
 torch.manual_seed(0)
@@ -40,8 +41,15 @@ print_table({
     'jitter_factor': jitter_factor
 })
 
+# Read the mean and std for inertial data from the dataset configuration
+utdMhadConfig = UtdMhadDatasetConfig()
+mean = utdMhadConfig.modalities['inertial']['mean']
+std = utdMhadConfig.modalities['inertial']['std']
+normalizeTransform = Normalize('inertial', mean, std)
+
 # Load Data
 train_dataset = UtdMhadDataset(modality='inertial', train=True, transform=Compose([
+    normalizeTransform,
     Sampler(107),
     FilterDimensions([0, 1, 2]),
     Jittering(jitter_factor),
@@ -49,9 +57,9 @@ train_dataset = UtdMhadDataset(modality='inertial', train=True, transform=Compos
 ]))
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
 test_dataset = UtdMhadDataset(modality='inertial', train=False, transform=Compose([
+    normalizeTransform,
     Sampler(107),
     FilterDimensions([0, 1, 2]),
-    Jittering(jitter_factor),
     Flatten(),
 ]))
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
@@ -61,6 +69,6 @@ model = CNN1D().to(device)
 
 # Loss and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.0)
+optimizer = optim.RMSprop(model.parameters(), lr=0.0001)
 
 train(model, criterion, optimizer, train_loader, test_loader, num_epochs, batch_size, device)

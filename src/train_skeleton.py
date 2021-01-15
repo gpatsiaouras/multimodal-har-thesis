@@ -6,13 +6,14 @@ import torch.nn as nn
 from torch import optim
 from torch.utils.data import DataLoader
 
+from configurators import UtdMhadDatasetConfig
 from datasets import UtdMhadDataset
 from models import BiGRU, BiLSTM
 from tools import train, load_yaml
 from transforms import Resize, Compose, ToSequence, FilterJoints, Normalize, RandomEulerRotation
 from visualizers import print_table
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Seed number generator
 torch.manual_seed(0)
@@ -38,8 +39,8 @@ num_frames = param_config.get('dataset').get('num_frames')
 model_type = param_config.get('model').get('model_type')
 hidden_size = param_config.get('model').get('hidden_size')
 num_layers = param_config.get('model').get('num_layers')
-input_size = len(selected_joints)  # number of joints as input size
-sequence_length = num_frames * 3  # features(frames) x 3 dimensions xyz per frame
+input_size = len(selected_joints) * 3  # input size is (joints x axis)
+sequence_length = num_frames
 
 # Print parameters
 print_table({
@@ -55,28 +56,35 @@ print_table({
     'sequence_length': sequence_length,
 })
 
+utdMhadConfig = UtdMhadDatasetConfig()
+mean = utdMhadConfig.modalities['skeleton']['mean']
+std = utdMhadConfig.modalities['skeleton']['std']
+normalizeTransform = Normalize('skeleton', mean, std)
+
 # Load Data
 train_dataset = UtdMhadDataset(modality='skeleton', train=True, transform=Compose([
-    Normalize((0, 2)),
+    normalizeTransform,
     Resize(num_frames),
     FilterJoints(selected_joints),
     RandomEulerRotation(-5, 5, 5),
     ToSequence(sequence_length, input_size)
 ]))
-train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
 test_dataset = UtdMhadDataset(modality='skeleton', train=False, transform=Compose([
-    Normalize((0, 2)),
+    normalizeTransform,
     Resize(num_frames),
     FilterJoints(selected_joints),
     ToSequence(sequence_length, input_size)
 ]))
-test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
 
 # Model
-if model_type is 'lstm':
-    model = BiLSTM(batch_size, input_size, hidden_size, num_layers, num_classes, device).to(device)
+if model_type == 'lstm':
+    model = BiLSTM(input_size, hidden_size, num_layers, num_classes, device).to(device)
 else:
-    model = BiGRU(batch_size, input_size, hidden_size, num_layers, num_classes, device).to(device)
+    model = BiGRU(input_size, hidden_size, num_layers, num_classes, device).to(device)
+
+model = model.to(device)
 
 # Loss and Optimizer
 criterion = nn.CrossEntropyLoss()

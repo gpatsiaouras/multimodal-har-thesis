@@ -4,10 +4,11 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader
 
+from configurators import UtdMhadDatasetConfig
 from datasets import UtdMhadDataset
-from models import ELM, CNN1D, MobileNetV2, BiGRU
-from tools import get_fused_feature_vector, get_predictions, plot_confusion_matrix, get_confusion_matrix_multiple_models
-from transforms import Sampler, FilterDimensions, Flatten, Compose, Normalize, Resize, FilterJoints, ToSequence
+from models import ELM, CNN1D, MobileNetV2, BiLSTM
+from tools import get_fused_feature_vector, get_predictions
+from transforms import Sampler, FilterDimensions, Flatten, Compose, Normalize, Resize, FilterJoints
 
 torch.manual_seed(0)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -22,16 +23,23 @@ num_frames = 41
 hidden_size_skeleton = 128
 num_layers = 2
 selected_joints = [0, 5, 7, 9, 11, 13, 15, 17, 19]
-input_size_skeleton = len(selected_joints)  # number of joints as input size
-sequence_length = num_frames * 3  # features(frames) x 3 dimensions xyz per frame
+input_size_skeleton = len(selected_joints) * 3  # input size is joints times axis (per joint)
+sequence_length = num_frames
 
+utdMhadConfig = UtdMhadDatasetConfig()
+normalizeInertial = Normalize('inertial',
+                              utdMhadConfig.modalities['inertial']['mean'], utdMhadConfig.modalities['inertial']['std'])
+normalizeSkeleton = Normalize('skeleton',
+                              utdMhadConfig.modalities['skeleton']['mean'], utdMhadConfig.modalities['skeleton']['std'])
 # Datasets initialization train/test
 train_dataset_inertial = UtdMhadDataset(modality='inertial', train=True, transform=Compose([
+    normalizeInertial,
     Sampler(107),
     FilterDimensions([0, 1, 2]),
     Flatten(),
 ]))
 test_dataset_inertial = UtdMhadDataset(modality='inertial', train=False, transform=Compose([
+    normalizeInertial,
     Sampler(107),
     FilterDimensions([0, 1, 2]),
     Flatten(),
@@ -45,33 +53,32 @@ test_dataset_rgb = UtdMhadDataset(modality='sdfdi', train=False, transform=Compo
     torchvision.transforms.ToTensor()
 ]))
 train_dataset_skeleton = UtdMhadDataset(modality='skeleton', train=True, transform=Compose([
-    Normalize((0, 2)),
+    normalizeSkeleton,
     Resize(num_frames),
     FilterJoints(selected_joints),
-    ToSequence(sequence_length, input_size_skeleton)
+    Flatten(),
 ]))
 test_dataset_skeleton = UtdMhadDataset(modality='skeleton', train=False, transform=Compose([
-    Normalize((0, 2)),
+    normalizeSkeleton,
     Resize(num_frames),
     FilterJoints(selected_joints),
-    ToSequence(sequence_length, input_size_skeleton)
+    Flatten(),
 ]))
 
 # Loaders
-train_loader_inertial = DataLoader(dataset=train_dataset_inertial, batch_size=batch_size, drop_last=True)
-test_loader_inertial = DataLoader(dataset=test_dataset_inertial, batch_size=batch_size, drop_last=True)
-train_loader_rgb = DataLoader(dataset=train_dataset_rgb, batch_size=batch_size, drop_last=True)
-test_loader_rgb = DataLoader(dataset=test_dataset_rgb, batch_size=batch_size, drop_last=True)
-train_loader_skeleton = DataLoader(dataset=train_dataset_skeleton, batch_size=batch_size, drop_last=True)
-test_loader_skeleton = DataLoader(dataset=test_dataset_skeleton, batch_size=batch_size, drop_last=True)
+train_loader_inertial = DataLoader(dataset=train_dataset_inertial, batch_size=batch_size)
+test_loader_inertial = DataLoader(dataset=test_dataset_inertial, batch_size=batch_size)
+train_loader_rgb = DataLoader(dataset=train_dataset_rgb, batch_size=batch_size)
+test_loader_rgb = DataLoader(dataset=test_dataset_rgb, batch_size=batch_size)
+train_loader_skeleton = DataLoader(dataset=train_dataset_skeleton, batch_size=batch_size)
+test_loader_skeleton = DataLoader(dataset=test_dataset_skeleton, batch_size=batch_size)
 
 # Initialize models and load saved weights
 model_inertial = CNN1D().to(device)
 model_inertial.load_state_dict(torch.load(sys.argv[1]))
 model_rgb = MobileNetV2(num_classes, pretrained=False).to(device)
 model_rgb.load_state_dict(torch.load(sys.argv[2]))
-model_skeleton = BiGRU(batch_size, input_size_skeleton, hidden_size_skeleton, num_layers, num_classes,
-                       device).to(device)
+model_skeleton = BiLSTM(input_size_skeleton, hidden_size_skeleton, num_layers, num_classes, device).to(device)
 model_skeleton.load_state_dict(torch.load(sys.argv[3]))
 
 # Get predictions from each model for each loader

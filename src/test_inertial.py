@@ -6,9 +6,7 @@ from torch.utils.data import DataLoader
 from datasets import UtdMhadDataset, UtdMhadDatasetConfig
 from models import CNN1D
 from tools import get_accuracy, get_confusion_matrix
-from transforms import Sampler, FilterDimensions, Flatten, Compose, Jittering
-
-# Check that saved model was given
+from transforms import Sampler, FilterDimensions, Flatten, Compose, Normalize
 from visualizers import plot_confusion_matrix
 
 if len(sys.argv) < 2:
@@ -20,8 +18,15 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Load parameters
 batch_size = 16
 
+# Read the mean and std for inertial data from the dataset configuration
+utdMhadConfig = UtdMhadDatasetConfig()
+mean = utdMhadConfig.modalities['inertial']['mean']
+std = utdMhadConfig.modalities['inertial']['std']
+normalizeTransform = Normalize('inertial', mean, std)
+
 # Load test dataset
 test_dataset = UtdMhadDataset(modality='inertial', train=False, transform=Compose([
+    normalizeTransform,
     Sampler(107),
     FilterDimensions([0, 1, 2]),
     Flatten(),

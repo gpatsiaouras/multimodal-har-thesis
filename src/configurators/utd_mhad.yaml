@@ -42,6 +42,8 @@ modalities:
     file_alias: inertial
     file_ext: mat
     data_key: d_iner
+    mean: [-0.62575306, -0.26179606, -0.07613295, 3.70461374, -4.34395205, -0.09911604]
+    std: [0.6440941, 0.46361165, 0.43402348, 87.2470291, 100.86503743, 107.77852571]
   depth:
     folder_name: Depth
     file_alias: depth
@@ -52,6 +54,9 @@ modalities:
     file_alias: skeleton
     file_ext: mat
     data_key: d_skel
+    # Values per x, y, z axis
+    mean: [-0.09214367,-0.29444627, 2.87122181]
+    std: [0.13432376, 0.46162172, 0.12374677]
   rgb:
     folder_name: RGB
     file_alias: color
@@ -60,6 +65,8 @@ modalities:
     folder_name: SDFDI
     file_alias: sdfdi
     file_ext: jpg
+    mean: 13.673834451634603
+    std: 25.592565539434137
 
 actions:
   swipe_left:
@@ -194,22 +201,22 @@ joint_names:
   - Foot Right
 
 bones:
-  - [0, 1]
-  - [1, 8]
-  - [8, 9]
-  - [9, 10]
-  - [10, 11]
-  - [1, 4]
-  - [4, 5]
-  - [5, 6]
-  - [6, 7]
-  - [1, 2]
-  - [2, 3]
-  - [3, 16]
-  - [16, 17]
-  - [17, 18]
-  - [18, 19]
-  - [3, 12]
-  - [12, 13]
-  - [13, 14]
-  - [14, 15]
+  - [ 0, 1 ]
+  - [ 1, 8 ]
+  - [ 8, 9 ]
+  - [ 9, 10 ]
+  - [ 10, 11 ]
+  - [ 1, 4 ]
+  - [ 4, 5 ]
+  - [ 5, 6 ]
+  - [ 6, 7 ]
+  - [ 1, 2 ]
+  - [ 2, 3 ]
+  - [ 3, 16 ]
+  - [ 16, 17 ]
+  - [ 17, 18 ]
+  - [ 18, 19 ]
+  - [ 3, 12 ]
+  - [ 12, 13 ]
+  - [ 13, 14 ]
+  - [ 14, 15 ]
