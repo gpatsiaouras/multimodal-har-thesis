@@ -1,47 +1,12 @@
 import os.path
 
-import cv2
 import numpy as np
 import scipy.io
 import torch
-from PIL import Image
 from torch.utils.data import Dataset
 
-from configurators.utd_mhad import UtdMhadDatasetConfig
-from tools import generate_sdfdi
-
-
-def _read_video(filename):
-    """
-    Receives a filename of a video, opes the file and saves all concurrent frames in a list as ndarray
-    :param filename: name of the video file
-    :return: list of frames
-    """
-    video = cv2.VideoCapture(filename)
-    frames = []
-    ret = True
-    while ret:
-        ret, frame = video.read()
-        if ret:
-            frames.append(frame)
-
-    return frames
-
-
-def _create_jpg_image(jpg_filename, video_filename):
-    """
-    Receives a filename of an image and a video, reads the video
-    generates the SDFDI image and saves it with the given image filename.
-    :param jpg_filename: The filename to save the image to
-    :param video_filename: The filename to read the video from
-    """
-    # Create the directory of the SDFDI modality if not exists
-    if not os.path.isdir(os.path.dirname(jpg_filename)):
-        os.mkdir(os.path.dirname(jpg_filename))
-    frames = _read_video(video_filename)
-    # Generate SDFDI and save the image as jpg
-    sdfdi = generate_sdfdi(frames)
-    cv2.imwrite(jpg_filename, sdfdi)
+from configurators import UtdMhadDatasetConfig
+from .functions import read_image, read_video, create_jpg_image
 
 
 class UtdMhadDataset(Dataset):
@@ -91,7 +56,7 @@ class UtdMhadDataset(Dataset):
                             repetition=repetition)
                         if os.path.isfile(video_filename):
                             print('Item %s doesn\'t exist. Creating...' % filename)
-                            _create_jpg_image(filename, video_filename)
+                            create_jpg_image(filename, video_filename)
                             self.filenames.append(filename)
                             self.labels.append(actionValue['file_id'])
 
@@ -109,9 +74,9 @@ class UtdMhadDataset(Dataset):
         if self.modality['file_ext'] == 'mat':
             data = self._read_inertial(idx)
         elif self.modality['file_ext'] == 'avi':
-            data = _read_video(self.filenames[idx])
+            data = read_video(self.filenames[idx])
         elif self.modality['file_ext'] == 'jpg':
-            data = self._read_image(idx)
+            data = read_image(self.filenames[idx])
         else:
             raise Exception('Unsupported extension: %s' % self.modality['file_ext'])
 
@@ -124,7 +89,17 @@ class UtdMhadDataset(Dataset):
         return data, actions
 
     def _read_inertial(self, idx):
+        """
+        Reads data the data from a mat file and returns an numpy array
+        :param idx: index of sample
+        :return: numpy array
+        """
         return scipy.io.loadmat(self.filenames[idx])[self.modality['data_key']]
 
-    def _read_image(self, idx):
-        return Image.open(self.filenames[idx])
+    def get_class_names(self):
+        """
+        Returns a list of action names (classes)
+        Used in confusion matrix printing
+        :return:
+        """
+        return [action for action in self.dataset_config.actions]

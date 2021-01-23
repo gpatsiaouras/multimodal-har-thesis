@@ -2,12 +2,11 @@ import torch.nn as nn
 
 
 class BiLSTM(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes, device):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
         super(BiLSTM, self).__init__()
         self.name = 'lstm'
         self.num_layers = num_layers
         self.hidden_size = hidden_size
-        self.device = device
         self.num_directions = 2
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers,
                             batch_first=True, bidirectional=self.num_directions == 2)

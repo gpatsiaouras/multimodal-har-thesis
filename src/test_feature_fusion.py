@@ -78,7 +78,7 @@ model_inertial = CNN1D().to(device)
 model_inertial.load_state_dict(torch.load(sys.argv[1]))
 model_rgb = MobileNetV2(num_classes, pretrained=False).to(device)
 model_rgb.load_state_dict(torch.load(sys.argv[2]))
-model_skeleton = BiLSTM(input_size_skeleton, hidden_size_skeleton, num_layers, num_classes, device).to(device)
+model_skeleton = BiLSTM(input_size_skeleton, hidden_size_skeleton, num_layers, num_classes).to(device)
 model_skeleton.load_state_dict(torch.load(sys.argv[3]))
 
 # Get predictions from each model for each loader

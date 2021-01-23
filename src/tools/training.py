@@ -1,5 +1,6 @@
 import time
 
+import numpy as np
 import torch
 import torch.nn.functional as functional
 
@@ -8,7 +9,7 @@ from visualizers import plot_confusion_matrix, plot_loss, plot_accuracy
 from .model_tools import save_model
 
 
-def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, batch_size, device):
+def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, batch_size, device, writer=None):
     """
     Performs training process based on the configuration provided as input. Automatically saves accuracy, loss and
     confusion matrix plots.
@@ -20,6 +21,7 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
     :param num_epochs: Number of epochs to train
     :param batch_size: Batch size
     :param device: Device
+    :param writer: SummaryWriter for tensorboard
     """
     # Statistics
     start_time = time.time()
@@ -56,8 +58,6 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
             # backward
             optimizer.zero_grad()
             loss.backward()
-            if model.name == 'gru' or model.name == 'lstm':
-                torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=1)
 
             # gradient descent or adam step
             optimizer.step()
@@ -77,12 +77,19 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
         # Timing
         total_epoch_time = time.time() - epoch_start_time
         total_time = time.time() - start_time
+        # Tensorboard
+        if writer:
+            writer.add_scalar('training loss', train_loss, epoch)
+            writer.add_scalar('training accuracy', train_acc, epoch)
+            writer.add_scalar('test accuracy', test_acc, epoch)
         print('\n=== Epoch %d/%d ===' % (epoch + 1, num_epochs))
         print('loss: %.3f' % train_loss)
         print('accuracy: %f' % train_acc)
         print('test_accuracy: %f' % test_acc)
         print('epoch duration: %s' % time.strftime('%H:%M:%S', time.gmtime(total_epoch_time)))
         print('total duration until now: %s' % time.strftime('%H:%M:%S', time.gmtime(total_time)))
+
+    print('Maximum test accuracy achieved: %f' % np.array(test_accuracies).max())
 
     # Save the model after finished training. Add the number of epochs and
     # batch size in the filename for clarity
@@ -153,7 +160,6 @@ def get_confusion_matrix_multiple_models(data_loaders, models, device):
 
         c_scores[idx, :, :] = all_predictions
         c_labels[idx, :, :] = all_labels
-
 
     fused_scores = c_scores.prod(dim=0)
     num_classes = c_labels[0].shape[1]

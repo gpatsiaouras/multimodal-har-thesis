@@ -5,7 +5,7 @@ import torchvision
 from prettytable import PrettyTable
 from torch.utils.data import DataLoader
 
-from datasets import UtdMhadDataset, UtdMhadDatasetConfig
+from datasets import UtdMhadDataset
 from models import CNN1D, BiGRU, MobileNetV2
 from tools import get_score_fusion_accuracy, get_confusion_matrix_multiple_models, plot_confusion_matrix
 from transforms import Compose, Sampler, FilterDimensions, Flatten, Normalize, FilterJoints, ToSequence, Resize
@@ -58,7 +58,7 @@ if len(sys.argv) > 2:
     rgb_included = True
 
 if len(sys.argv) > 3:
-    model_skeleton = BiGRU(batch_size, input_size, hidden_size, num_layers, num_classes, device).to(device)
+    model_skeleton = BiGRU(batch_size, input_size, hidden_size, num_layers, num_classes).to(device)
     model_skeleton.load_state_dict(torch.load(sys.argv[3]))
 
     test_dataset_skeleton = UtdMhadDataset(modality='skeleton', train=False, transform=Compose([

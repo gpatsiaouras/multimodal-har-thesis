@@ -1,5 +1,0 @@
-training:
-  num_epochs: 1000
-
-model:
-  model_type: 'lstm'

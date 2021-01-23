@@ -1,8 +1,0 @@
-dataset:
-  num_classes: 27
-
-hyper_parameters:
-  learning_rate: 0.0002
-  batch_size: 16
-  num_epochs: 200
-  jitter_factor: 500

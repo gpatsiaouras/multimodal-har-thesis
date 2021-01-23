@@ -1,10 +1,14 @@
+import argparse
+
 import numpy as np
 from PIL.JpegImagePlugin import JpegImageFile
+from torch.utils.data import Dataset
 
-from datasets import UtdMhadDataset
+from configurators import AVAILABLE_MODALITIES, AVAILABLE_MODALITIES_DIM, AVAILABLE_DATASETS
+from datasets import UtdMhadDataset, MmactDataset
 
 
-def calculate_means_stds(dataset: UtdMhadDataset, dim=None):
+def calculate_means_stds(dataset: Dataset, dim=None):
     """
     Calculates the mean and std for each sample based on the given dimensions and then averages them
     :param dataset: Dataset
@@ -28,23 +32,25 @@ def calculate_means_stds(dataset: UtdMhadDataset, dim=None):
     return mean, std
 
 
-# Inertial calculation
-train_dataset = UtdMhadDataset(modality='inertial', train=True)
-inertial_mean, inertial_std = calculate_means_stds(train_dataset, dim=0)
-print('Inertial mean std per axis (gyro x,y,z accel x,y,z)')
-print(inertial_mean)
-print(inertial_std)
+def get_dataset_class(dataset_name):
+    if dataset_name == 'utd_mhad':
+        return UtdMhadDataset
+    elif dataset_name == 'mmact':
+        return MmactDataset
+    else:
+        raise Exception('Unsupported dataset: %s' % dataset_name)
 
-# SDFDI calculation
-train_dataset = UtdMhadDataset(modality='sdfdi', train=True)
-sdfdi_mean, sdfdi_std = calculate_means_stds(train_dataset)
-print('SDFDI (RGB) mean std per channel')
-print(sdfdi_mean)
-print(sdfdi_std)
 
-# Skeleton calculation
-train_dataset = UtdMhadDataset(modality='skeleton', train=True)
-skeleton_mean, skeleton_std = calculate_means_stds(train_dataset, dim=(0, 2))
-print('Skeleton mean std per axis of every joint')
-print(skeleton_mean)
-print(skeleton_std)
+# Set argument parser
+parser = argparse.ArgumentParser(prog='PROG')
+parser.add_argument('--dataset', choices=AVAILABLE_DATASETS, default='utd_mhad')
+parser.add_argument('--modality', choices=AVAILABLE_MODALITIES, required=True)
+args = parser.parse_args()
+
+SelectedDataset = get_dataset_class(args.dataset)
+selectedDim = AVAILABLE_MODALITIES_DIM[AVAILABLE_MODALITIES.index(args.modality)]
+
+train_dataset = SelectedDataset(modality=args.modality, train=True)
+mean, std = calculate_means_stds(train_dataset, dim=selectedDim)
+print('Mean: %s' % mean)
+print('Std: %s' % std)

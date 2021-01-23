@@ -1,9 +1,9 @@
 import itertools
 import os
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-import time
 
 
 def plot_inertial_accelerometer(data):
@@ -112,7 +112,7 @@ def plot_confusion_matrix(cm, classes, title='Confusion matrix', normalize=False
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         ax.text(j, i, int(cm[i, j]), horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
+                color="white" if cm[i, j] > thresh else "black")
 
     fig.tight_layout()
     if save:

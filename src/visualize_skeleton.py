@@ -1,4 +1,5 @@
-from datasets import UtdMhadDataset, UtdMhadDatasetConfig
+from configurators import UtdMhadDatasetConfig
+from datasets import UtdMhadDataset
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 

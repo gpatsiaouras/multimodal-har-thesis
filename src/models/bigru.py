@@ -2,12 +2,11 @@ import torch.nn as nn
 
 
 class BiGRU(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes, device):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
         super(BiGRU, self).__init__()
         self.name = 'gru'
         self.num_layers = num_layers
         self.hidden_size = hidden_size
-        self.device = device
         self.num_directions = 2  # bidirectional=True
         self.bigru = nn.GRU(input_size, hidden_size, num_layers, batch_first=True,
                             bidirectional=self.num_directions == 2)

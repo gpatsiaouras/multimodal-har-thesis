@@ -1,0 +1,51 @@
+subjects: 20
+scenes: 4
+sessions: 5
+
+modalities:
+  acc_phone:
+    folder_name: acc_phone
+    file_ext: csv
+  acc_watch:
+    folder_name: acc_watch
+    file_ext: csv
+  gyro:
+    folder_name: gyro
+    file_ext: csv
+  orientation:
+    folder_name: orientation
+    file_ext: csv
+  video:
+    folder_name: videos
+    file_ext: mp4
+  sdfdi:
+    folder_name: sdfdi
+    file_ext: jpg
+
+actions:
+  - carrying
+  - checking_time
+  - closing
+  - crouching
+  - entering
+  - exiting
+  - fall
+  - jumping
+  - kicking
+  - loitering
+  - looking_around
+  - opening
+  - picking_up
+  - pointing
+  - pulling
+  - pushing
+  - running
+  - setting_down
+  - standing
+  - talking
+  - talking_on_phone
+  - throwing
+  - transferring_object
+  - using_phone
+  - walking
+  - waving_hand

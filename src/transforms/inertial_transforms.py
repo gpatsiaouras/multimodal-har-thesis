@@ -4,54 +4,6 @@ import numpy as np
 import random
 
 
-class CropToSize:
-    """
-    Crops sample to a specific given size. Trashes remaining rows in the end of the vector
-    bigger than the specified size.
-    """
-
-    def __init__(self, size, randomStart=False):
-        """
-        Initiates transform with a number for cropping size
-        When request size is smaller than the x size, if randomStart
-        is true, it will not start from the beginning up to the requested size
-        but from a random point
-        :param size: Frames to crop to
-        :param randomStart: True or false
-        """
-        self.size = size
-        self.randomStart = randomStart
-
-    def __call__(self, x):
-        """
-        Crops the input in the first dimension in the given size
-        :param x: ndarray
-        :return: ndarray
-        """
-        diff = self.size - x.shape[0]
-        if diff > 0:
-            # if the requested size is larger than the x size. Start in the middle
-            starting_point = diff // 2
-            # Initiate a zero array
-            cropped = np.zeros((self.size, x.shape[1]))
-            # Replace the middle of the array with x
-            cropped[starting_point:starting_point + x.shape[0]] = x
-        elif diff < 0:
-            # if the requested size is smaller than the x size
-            if self.randomStart:
-                # Calculate a random starting point
-                starting_point = np.random.randint(0, np.abs(diff))
-                # Start from there and retrieve requested samples.
-                cropped = x[starting_point:starting_point+self.size]
-            else:
-                # Start from the beginning and retrieve self.size samples.
-                cropped = x[:self.size]
-        else:
-            cropped = x
-
-        return cropped
-
-
 class Jittering:
     """
     Data augmentation through signal jittering, adding white Gaussian noise
