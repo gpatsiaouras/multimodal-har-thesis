@@ -25,6 +25,35 @@ modalities:
     num_epochs: 200
     criterion: CrossEntropyLoss
     optimizer: RMSprop
+  sdfdi:
+    model:
+      class_name: MobileNetV2
+      args:
+        - 37
+    transforms:
+      - class_name: RandomResizedCrop
+        from_module: torchvision.transforms
+        in_test: false
+        args:
+          - 480
+      - class_name: Resize
+        from_module: torchvision.transforms
+        in_test: true
+        args:
+          - 224
+      - class_name: ToTensor
+        from_module: torchvision.transforms
+        in_test: true
+        args: [ ]
+    learning_rate: 0.0001
+    batch_size: 32
+    num_epochs: 50
+    criterion:
+      class_name: CrossEntropyLoss
+      from_module: torch.nn
+    optimizer:
+      class_name: Adam
+      from_module: torch.optim
 
 dataset:
   class_name: MmactDataset

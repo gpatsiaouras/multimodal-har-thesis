@@ -1,4 +1,5 @@
 import argparse
+import importlib
 
 import torch
 from torch.utils.data import DataLoader
@@ -36,8 +37,10 @@ batch_size = param_config.get('modalities').get(modality).get('batch_size')
 num_epochs = param_config.get('modalities').get(modality).get('num_epochs')
 shuffle = param_config.get('dataset').get('shuffle')
 model_class_name = param_config.get('modalities').get(modality).get('model').get('class_name')
-criterion = param_config.get('modalities').get(modality).get('criterion')
-optimizer = param_config.get('modalities').get(modality).get('optimizer')
+criterion = param_config.get('modalities').get(modality).get('criterion').get('class_name')
+criterion_from = param_config.get('modalities').get(modality).get('criterion').get('from_module')
+optimizer = param_config.get('modalities').get(modality).get('optimizer').get('class_name')
+optimizer_from = param_config.get('modalities').get(modality).get('optimizer').get('from_module')
 
 # Load Data
 train_dataset = SelectedDataset(modality=modality, train=True, transform=transforms)
@@ -50,8 +53,8 @@ model = getattr(models, model_class_name)(*param_config.get('modalities').get(mo
 model = model.to(device)
 
 # Loss and optimizer
-criterion = getattr(torch.nn, criterion)()
-optimizer = getattr(torch.optim, optimizer)(model.parameters(), learning_rate)
+criterion = getattr(importlib.import_module(criterion_from), criterion)()
+optimizer = getattr(importlib.import_module(optimizer_from), optimizer)(model.parameters(), learning_rate)
 
 # Print parameters
 print_table({

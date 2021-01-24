@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import Dataset
 
 from configurators import MmactDatasetConfig
-from datasets.functions import read_video, create_jpg_image, read_csv
+from datasets.functions import read_video, create_jpg_image, read_csv, read_image
 
 
 class MmactDataset(Dataset):
@@ -73,14 +73,13 @@ class MmactDataset(Dataset):
             data = read_csv(self.filenames[idx])
         elif self.modality['file_ext'] == 'mp4':
             data = read_video(self.filenames[idx])
+        elif self.modality['file_ext'] == 'jpg':
+            data = read_image(self.filenames[idx])
         else:
             raise Exception('Unsupported extension: %s' % self.modality['file_ext'])
 
         actions = np.zeros(len(self.dataset_config.actions))
         actions[self.labels[idx] - 1] = 1
-
-        if data.shape[0] == 0:
-            raise Exception('Data is none')
 
         if self.transform:
             data = self.transform(data)

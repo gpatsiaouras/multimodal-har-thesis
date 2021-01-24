@@ -33,8 +33,12 @@ modalities:
     learning_rate: 0.0002
     batch_size: 16
     num_epochs: 200
-    criterion: CrossEntropyLoss
-    optimizer: RMSprop
+    criterion:
+      class_name: CrossEntropyLoss
+      from_module: torch.nn
+    optimizer:
+      class_name: SGD
+      from_module: torch.optim
   sdfdi:
     model:
       class_name: MobileNetV2
@@ -58,8 +62,12 @@ modalities:
     learning_rate: 0.0001
     batch_size: 32
     num_epochs: 50
-    criterion: CrossEntropyLoss
-    optimizer: RMSprop
+    criterion:
+      class_name: CrossEntropyLoss
+      from_module: torch.nn
+    optimizer:
+      class_name: Adam
+      from_module: torch.optim
   skeleton:
     model:
       class_name: BiLSTM
@@ -106,8 +114,12 @@ modalities:
     learning_rate: 0.001
     batch_size: 32
     num_epochs: 350
-    criterion: CrossEntropyLoss
-    optimizer: RMSprop
+    criterion:
+      class_name: CrossEntropyLoss
+      from_module: torch.nn
+    optimizer:
+      class_name: RMSprop
+      from_module: torch.optim
 
 dataset:
   class_name: UtdMhadDataset

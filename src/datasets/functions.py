@@ -36,7 +36,7 @@ def create_jpg_image(jpg_filename, video_filename):
     """
     # Create the directory of the SDFDI modality if not exists
     if not os.path.isdir(os.path.dirname(jpg_filename)):
-        os.mkdir(os.path.dirname(jpg_filename))
+        os.makedirs(os.path.dirname(jpg_filename))
     frames = read_video(video_filename)
     # Generate SDFDI and save the image as jpg
     sdfdi = generate_sdfdi(frames)

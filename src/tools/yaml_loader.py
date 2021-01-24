@@ -13,7 +13,7 @@ def load_yaml(filename):
     """
     # Retrieve name of parent yaml
     if os.path.basename(filename) == DEFAULT_YAML:
-        return __read_yaml(filename)
+        return _read_yaml(filename)
 
     # Load the default file first
     if os.path.isabs(filename):
@@ -22,14 +22,14 @@ def load_yaml(filename):
         default_file = os.path.join(os.path.abspath(os.path.dirname(filename)), DEFAULT_YAML)
 
     # Read both default and requested yaml
-    default_file_content = __read_yaml(default_file)
-    file_content = __read_yaml(os.path.abspath(filename))
+    default_file_content = _read_yaml(default_file)
+    file_content = _read_yaml(os.path.abspath(filename))
 
     # Merge the two yaml by recursive update
     return __deep_update(default_file_content, file_content)
 
 
-def __read_yaml(file):
+def _read_yaml(file):
     """
     Opens a yaml file, and returns the content as dict
     :param file: str
