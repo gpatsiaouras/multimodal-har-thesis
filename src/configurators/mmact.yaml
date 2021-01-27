@@ -23,29 +23,39 @@ modalities:
     file_ext: jpg
 
 actions:
-  - carrying
-  - checking_time
-  - closing
-  - crouching
-  - entering
   - exiting
+  - entering
+  - using_pc
+  - drinking
+  - closing
+  - carrying_light
   - fall
-  - jumping
-  - kicking
-  - loitering
-  - looking_around
-  - opening
-  - picking_up
+  - sitting_down
+  - using_phone
   - pointing
-  - pulling
+  - carrying_heavy
+  - sitting
+  - crouching
+  - kicking
   - pushing
-  - running
-  - setting_down
+  - looking_around
+  - carrying
+  - jumping
+  - pulling
+  - checking_time
   - standing
+  - Carrying_light
+  - running
+  - standing_up
+  - pocket_in
+  - waving_hand
+  - transferring_object
+  - setting_down
   - talking
+  - loitering
+  - picking_up
+  - opening
+  - pocket_out
+  - walking
   - talking_on_phone
   - throwing
-  - transferring_object
-  - using_phone
-  - walking
-  - waving_hand

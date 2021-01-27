@@ -29,7 +29,7 @@ modalities:
     model:
       class_name: MobileNetV2
       args:
-        - 37
+        - 36
     transforms:
       - class_name: RandomResizedCrop
         from_module: torchvision.transforms

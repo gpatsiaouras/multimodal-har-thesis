@@ -3,6 +3,8 @@ import time
 import numpy as np
 import torch
 import torch.nn.functional as functional
+from sklearn.metrics import confusion_matrix
+from sklearn.neighbors import KNeighborsClassifier
 
 from configurators import UtdMhadDatasetConfig
 from visualizers import plot_confusion_matrix, plot_loss, plot_accuracy
@@ -25,6 +27,7 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
     """
     # Statistics
     start_time = time.time()
+    time_per_epoch = []
     train_accuracies = []
     test_accuracies = []
     losses = []
@@ -45,7 +48,8 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
             labels = labels.to(device)
 
             # forward
-            scores = model(data)
+            # TODO REMOVE
+            scores = model(data, skip_last_fc=True)
 
             _, input_indices = torch.max(labels, dim=1)
             loss = criterion(scores, input_indices)
@@ -76,7 +80,13 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
         test_accuracies.append(test_acc)
         # Timing
         total_epoch_time = time.time() - epoch_start_time
+        time_per_epoch.append(total_epoch_time)
         total_time = time.time() - start_time
+
+        # REMOVE
+        avg_time_per_epoch = sum(time_per_epoch) / len(time_per_epoch)
+        remaining_time = (num_epochs - epoch) * avg_time_per_epoch
+
         # Tensorboard
         if writer:
             writer.add_scalar('training loss', train_loss, epoch)
@@ -87,7 +97,8 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
         print('accuracy: %f' % train_acc)
         print('test_accuracy: %f' % test_acc)
         print('epoch duration: %s' % time.strftime('%H:%M:%S', time.gmtime(total_epoch_time)))
-        print('total duration until now: %s' % time.strftime('%H:%M:%S', time.gmtime(total_time)))
+        print('elapsed/remaining time: %s/%s' % (
+            time.strftime('%H:%M:%S', time.gmtime(total_time)), time.strftime('%H:%M:%S', time.gmtime(remaining_time))))
 
     print('Maximum test accuracy achieved: %f' % np.array(test_accuracies).max())
 
@@ -213,3 +224,22 @@ def get_num_correct_predictions(scores, labels):
     :return: number of correct predictions
     """
     return int((labels.argmax(1) == scores.argmax(1)).sum())
+
+
+def get_predictions_with_knn(n_neighbors, train_loader, test_loader, model, device):
+    x_train, y_train = get_predictions(train_loader, model, device, skip_last_fc=True)
+    x_test, y_test = get_predictions(test_loader, model, device, skip_last_fc=True)
+    y_test = y_test.argmax(1)
+    classifier = KNeighborsClassifier(n_neighbors=n_neighbors)
+    if device.type == 'cuda':
+        x_train = x_train.cpu()
+        y_train = y_train.cpu()
+        x_test = x_test.cpu()
+        y_test = y_test.cpu()
+    classifier.fit(x_train, y_train)
+    y_pred = classifier.predict(x_test)
+    y_pred = y_pred.argmax(1)
+    test_accuracy = int((y_test == torch.Tensor(y_pred)).sum()) / y_test.shape[0]
+    cm = confusion_matrix(y_test, y_pred)
+
+    return cm, test_accuracy
