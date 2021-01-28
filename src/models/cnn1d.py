@@ -2,31 +2,58 @@ import torch.nn as nn
 
 
 class CNN1D(nn.Module):
-    def __init__(self):
+    def __init__(self,
+                 len_seq,
+                 out_size,
+                 in_channels=None,
+                 out_channels=None,
+                 kernel_size=3,
+                 stride=1,
+                 padding=0,
+                 pool_padding=0,
+                 pool_size=2,
+                 dropout_rate=0.8,
+                 fc_size=2048):
         """
         Initiate layers of a 5 convolutions layer network
         """
         super(CNN1D, self).__init__()
-        self.name = 'CNN1D'
-        self.pool = nn.MaxPool1d(kernel_size=2, stride=None)
-        self.dropout = nn.Dropout(p=0.8, inplace=True)
-        self.relu = nn.ReLU(inplace=True)
+        if in_channels is None:
+            in_channels = [1, 32, 64, 128, 256]
+        if out_channels is None:
+            out_channels = [32, 64, 128, 256, 512]
 
-        self.conv1 = nn.Conv1d(in_channels=1, out_channels=32, kernel_size=3, stride=1)
-        self.batchNorm1 = nn.BatchNorm1d(32)
-        self.conv2 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, stride=1)
-        self.batchNorm2 = nn.BatchNorm1d(64)
-        self.conv3 = nn.Conv1d(in_channels=64, out_channels=128, kernel_size=3, stride=1)
-        self.batchNorm3 = nn.BatchNorm1d(128)
-        self.conv4 = nn.Conv1d(in_channels=128, out_channels=256, kernel_size=3, stride=1)
-        self.batchNorm4 = nn.BatchNorm1d(256)
-        self.conv5 = nn.Conv1d(in_channels=256, out_channels=512, kernel_size=3, stride=1)
-        self.batchNorm5 = nn.BatchNorm1d(512)
+        self.name = 'CNN1D'
+        self.num_layers = len(out_channels)
+        self.pool = nn.MaxPool1d(kernel_size=pool_size, stride=None)
+        self.dropout = nn.Dropout(p=dropout_rate, inplace=True)
+        self.relu = nn.ReLU(inplace=True)
         self.flatten = nn.Flatten()
 
-        self.fc1 = nn.Linear(512 * 8, 2048)
-        self.fc2 = nn.Linear(2048, 2048)
-        self.fc3 = nn.Linear(2048, 27)
+        self.conv1 = nn.Conv1d(in_channels=in_channels[0], out_channels=out_channels[0], kernel_size=kernel_size,
+                               stride=stride, padding=padding)
+        self.batchNorm1 = nn.BatchNorm1d(out_channels[0])
+        self.conv2 = nn.Conv1d(in_channels=in_channels[1], out_channels=out_channels[1], kernel_size=kernel_size,
+                               stride=stride, padding=padding)
+        self.batchNorm2 = nn.BatchNorm1d(out_channels[1])
+        self.conv3 = nn.Conv1d(in_channels=in_channels[2], out_channels=out_channels[2], kernel_size=kernel_size,
+                               stride=stride, padding=padding)
+        self.batchNorm3 = nn.BatchNorm1d(out_channels[2])
+        self.conv4 = nn.Conv1d(in_channels=in_channels[3], out_channels=out_channels[3], kernel_size=kernel_size,
+                               stride=stride, padding=padding)
+        self.batchNorm4 = nn.BatchNorm1d(out_channels[3])
+        self.conv5 = nn.Conv1d(in_channels=in_channels[4], out_channels=out_channels[4], kernel_size=kernel_size,
+                               stride=stride, padding=padding)
+        self.batchNorm5 = nn.BatchNorm1d(out_channels[4])
+
+        conv_out_size = len_seq
+        for _ in range(self.num_layers):
+            conv_out_size = int((conv_out_size + 2 * padding - (kernel_size - 1) - 1) / stride + 1)
+            conv_out_size = int((conv_out_size + 2 * pool_padding - (pool_size - 1) - 1) / pool_size + 1)
+
+        self.fc1 = nn.Linear(int(out_channels[self.num_layers - 1] * conv_out_size), fc_size)
+        self.fc2 = nn.Linear(fc_size, fc_size)
+        self.fc3 = nn.Linear(fc_size, out_size)
 
     def forward(self, x, skip_last_fc=False):
         # Add a dimension in the middle because we only have one channel of data

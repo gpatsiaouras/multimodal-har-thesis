@@ -29,7 +29,7 @@ param_config = load_yaml(args.param_file)
 # Assign parameters
 modality = args.modality
 SelectedDataset = getattr(datasets, param_config.get('dataset').get('class_name'))
-_, transforms = get_transforms_from_config(param_config.get('modalities').get(modality).get('transforms'))
+_, test_transforms = get_transforms_from_config(param_config.get('modalities').get(modality).get('transforms'))
 batch_size = param_config.get('modalities').get(modality).get('batch_size')
 shuffle = param_config.get('dataset').get('shuffle')
 model_class_name = param_config.get('modalities').get(modality).get('model').get('class_name')
@@ -37,7 +37,7 @@ train_dataset_kwargs = param_config.get('dataset').get('train_kwargs')
 test_dataset_kwargs = param_config.get('dataset').get('test_kwargs')
 
 # Load Data
-test_dataset = SelectedDataset(modality=modality, transform=transforms, **test_dataset_kwargs)
+test_dataset = SelectedDataset(modality=modality, transform=test_transforms, **test_dataset_kwargs)
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=shuffle)
 
 # Initiate the model
@@ -47,7 +47,7 @@ model.load_state_dict(torch.load(args.saved_state))
 
 if args.knn:
     # Use test transforms for train_dataset too, we don't want random stuff happening.
-    train_dataset = SelectedDataset(modality=modality, transform=transforms, **train_dataset_kwargs)
+    train_dataset = SelectedDataset(modality=modality, transform=test_transforms, **train_dataset_kwargs)
     train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=shuffle)
     cm, test_accuracy = get_predictions_with_knn(
         n_neighbors=args.n_neighbors,

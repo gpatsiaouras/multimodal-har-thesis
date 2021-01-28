@@ -2,7 +2,9 @@ modalities:
   acc_phone:
     model:
       class_name: CNN1D
-      args: [ ]
+      args:
+        - 321
+        - 36
     transforms:
       - class_name: Normalize
         from_module: transforms
