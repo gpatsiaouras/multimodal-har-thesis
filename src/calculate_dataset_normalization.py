@@ -4,7 +4,7 @@ import numpy as np
 from PIL.JpegImagePlugin import JpegImageFile
 from torch.utils.data import Dataset
 
-from configurators import AVAILABLE_MODALITIES, AVAILABLE_MODALITIES_DIM, AVAILABLE_DATASETS
+from datasets import AVAILABLE_MODALITIES, AVAILABLE_MODALITIES_DIM, AVAILABLE_DATASETS
 from datasets import UtdMhadDataset, MmactDataset
 
 
@@ -50,7 +50,7 @@ args = parser.parse_args()
 SelectedDataset = get_dataset_class(args.dataset)
 selectedDim = AVAILABLE_MODALITIES_DIM[AVAILABLE_MODALITIES.index(args.modality)]
 
-train_dataset = SelectedDataset(modality=args.modality, train=True)
+train_dataset = SelectedDataset(modality=args.modality)
 mean, std = calculate_means_stds(train_dataset, dim=selectedDim)
 print('Mean: %s' % mean)
 print('Std: %s' % std)

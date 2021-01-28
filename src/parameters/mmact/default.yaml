@@ -30,6 +30,99 @@ modalities:
     optimizer:
       class_name: RMSprop
       from_module: torch.optim
+  gyro:
+    model:
+      class_name: CNN1D
+      args:
+        - 321
+        - 36
+    transforms:
+      - class_name: Normalize
+        from_module: transforms
+        in_test: true
+        args:
+          - [ 0.00251269, -0.01801674, -0.02959874 ]
+          - [ 0.64659124, 0.78229164, 0.43438999 ]
+      - class_name: Sampler
+        from_module: transforms
+        in_test: true
+        args:
+          - 107
+      - class_name: Flatten
+        from_module: transforms
+        in_test: true
+        args: [ ]
+    learning_rate: 0.0002
+    batch_size: 16
+    num_epochs: 50
+    criterion:
+      class_name: CrossEntropyLoss
+      from_module: torch.nn
+    optimizer:
+      class_name: RMSprop
+      from_module: torch.optim
+  acc_watch:
+    model:
+      class_name: CNN1D
+      args:
+        - 321
+        - 36
+    transforms:
+      - class_name: Normalize
+        from_module: transforms
+        in_test: true
+        args:
+          - [ 5.40047484, -3.81441984, 1.2683678 ]
+          - [ 3.73154579, 3.496252, 2.99241264 ]
+      - class_name: Sampler
+        from_module: transforms
+        in_test: true
+        args:
+          - 107
+      - class_name: Flatten
+        from_module: transforms
+        in_test: true
+        args: [ ]
+    learning_rate: 0.0002
+    batch_size: 16
+    num_epochs: 50
+    criterion:
+      class_name: CrossEntropyLoss
+      from_module: torch.nn
+    optimizer:
+      class_name: RMSprop
+      from_module: torch.optim
+  orientation:
+    model:
+      class_name: CNN1D
+      args:
+        - 321
+        - 36
+    transforms:
+      - class_name: Normalize
+        from_module: transforms
+        in_test: true
+        args:
+          - [ -0.03659844, 0.3757849, 0.13108678 ]
+          - [ 1.16419016, 0.21276641, 1.27769152 ]
+      - class_name: Sampler
+        from_module: transforms
+        in_test: true
+        args:
+          - 107
+      - class_name: Flatten
+        from_module: transforms
+        in_test: true
+        args: [ ]
+    learning_rate: 0.0002
+    batch_size: 16
+    num_epochs: 50
+    criterion:
+      class_name: CrossEntropyLoss
+      from_module: torch.nn
+    optimizer:
+      class_name: RMSprop
+      from_module: torch.optim
   sdfdi:
     model:
       class_name: MobileNetV2
