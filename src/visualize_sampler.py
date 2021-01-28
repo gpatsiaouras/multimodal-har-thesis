@@ -4,7 +4,7 @@ from visualizers import plot_inertial
 
 
 # Initiate the dataset with transforms of sampler and filter only gyroscope(x, y, z)
-dataset = UtdMhadDataset(modality='inertial', train=True, transform=Compose([
+dataset = UtdMhadDataset(modality='inertial', transform=Compose([
     FilterDimensions([0, 1, 2])
 ]))
 

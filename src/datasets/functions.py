@@ -54,7 +54,7 @@ def read_image(filename):
 
 def read_csv(filename):
     """
-    Reads a csv file into a numpy array
+    Reads a csv file into a numpy array, skips first column because it's datetime
     :param filename:
     :return:
     """
@@ -68,6 +68,11 @@ def read_csv(filename):
 
 
 def get_transforms_from_config(transform_definitions):
+    """
+    Returns instances of transforms dynamically based on the definitions (read from a parameter file)
+    :param transform_definitions:
+    :return: train_transforms, test_transforms
+    """
     train_transforms = []
     test_transforms = []
     for trans_config in transform_definitions:

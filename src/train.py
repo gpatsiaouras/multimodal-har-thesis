@@ -6,11 +6,9 @@ from torch.utils.data import DataLoader
 
 import datasets
 import models
-from configurators import AVAILABLE_MODALITIES
-from datasets import get_transforms_from_config
-from tools import load_yaml, train
-from visualizers import print_table
-
+from datasets import get_transforms_from_config, AVAILABLE_MODALITIES
+from tools import load_yaml, train, get_confusion_matrix, get_accuracy
+from visualizers import print_table, plot_loss, plot_accuracy, plot_confusion_matrix
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--modality', choices=AVAILABLE_MODALITIES, default='inertial')
@@ -41,11 +39,16 @@ criterion = param_config.get('modalities').get(modality).get('criterion').get('c
 criterion_from = param_config.get('modalities').get(modality).get('criterion').get('from_module')
 optimizer = param_config.get('modalities').get(modality).get('optimizer').get('class_name')
 optimizer_from = param_config.get('modalities').get(modality).get('optimizer').get('from_module')
+train_dataset_kwargs = param_config.get('dataset').get('train_kwargs')
+validation_dataset_kwargs = param_config.get('dataset').get('validation_kwargs')
+test_dataset_kwargs = param_config.get('dataset').get('test_kwargs')
 
 # Load Data
-train_dataset = SelectedDataset(modality=modality, train=True, transform=transforms)
+train_dataset = SelectedDataset(modality=modality, transform=transforms, **train_dataset_kwargs)
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=shuffle)
-test_dataset = SelectedDataset(modality=modality, train=False, transform=test_transforms)
+validation_dataset = SelectedDataset(modality=modality, transform=test_transforms, **validation_dataset_kwargs)
+validation_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=shuffle)
+test_dataset = SelectedDataset(modality=modality, transform=test_transforms, **test_dataset_kwargs)
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=shuffle)
 
 # Initiate the model
@@ -67,4 +70,18 @@ print_table({
     'num_epochs': num_epochs,
 })
 
-train(model, criterion, optimizer, train_loader, test_loader, num_epochs, batch_size, device)
+train_acc, validation_acc, loss = train(model, criterion, optimizer, train_loader, validation_loader, num_epochs,
+                                        batch_size, device)
+
+# plot results
+plot_accuracy(train_acc=train_acc, validation_acc=validation_acc, save=True)
+plot_loss(loss, save=True)
+plot_confusion_matrix(
+    cm=get_confusion_matrix(validation_loader, model, device),
+    title='Confusion Matrix - Percentage % - Validation dataset',
+    normalize=True,
+    save=True,
+    classes=train_dataset.get_class_names()
+)
+
+print('Test accuracy %f' % get_accuracy(test_loader, model, device))

@@ -1,0 +1,6 @@
+modalities:
+  acc_phone:
+    num_epochs: 100
+  sdfdi:
+    num_epochs: 500
+    batch_size: 200

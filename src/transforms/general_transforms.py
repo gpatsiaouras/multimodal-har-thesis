@@ -30,19 +30,12 @@ class Normalize:
     Normalizes based on mean and std. Used by skeleton and inertial modalities
     """
 
-    def __init__(self, modality, mean, std):
-        self.modality = modality
+    def __init__(self, mean, std):
         self.mean = mean
         self.std = std
 
     def __call__(self, x):
-        if self.modality == 'skeleton':
-            # Reshape x from (joints, axis, frames) to (frames, joints, axis)
-            x = np.moveaxis(x, [0, 1, 2], [1, 2, 0])
-            x = (x - self.mean) / self.std
-            return x
-        elif self.modality == 'inertial':
-            return (x - self.mean) / self.std
+        return (x - self.mean) / self.std
 
 
 class CropToSize:

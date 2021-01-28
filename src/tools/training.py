@@ -6,12 +6,10 @@ import torch.nn.functional as functional
 from sklearn.metrics import confusion_matrix
 from sklearn.neighbors import KNeighborsClassifier
 
-from configurators import UtdMhadDatasetConfig
-from visualizers import plot_confusion_matrix, plot_loss, plot_accuracy
 from .model_tools import save_model
 
 
-def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, batch_size, device, writer=None):
+def train(model, criterion, optimizer, train_loader, validation_loader, num_epochs, batch_size, device, writer=None):
     """
     Performs training process based on the configuration provided as input. Automatically saves accuracy, loss and
     confusion matrix plots.
@@ -19,7 +17,7 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
     :param criterion: Loss function
     :param optimizer: Optimizer
     :param train_loader: Training data
-    :param test_loader: Test data
+    :param validation_loader: Validation data
     :param num_epochs: Number of epochs to train
     :param batch_size: Batch size
     :param device: Device
@@ -29,7 +27,7 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
     start_time = time.time()
     time_per_epoch = []
     train_accuracies = []
-    test_accuracies = []
+    validation_accuracies = []
     losses = []
 
     # Train Network
@@ -48,8 +46,7 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
             labels = labels.to(device)
 
             # forward
-            # TODO REMOVE
-            scores = model(data, skip_last_fc=True)
+            scores = model(data)
 
             _, input_indices = torch.max(labels, dim=1)
             loss = criterion(scores, input_indices)
@@ -75,9 +72,9 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
         # Train accuracy
         train_acc = float(num_correct) / float(num_samples) * 100
         train_accuracies.append(train_acc)
-        # Test accuracy
-        test_acc = get_accuracy(test_loader, model, device) * 100
-        test_accuracies.append(test_acc)
+        # Validation accuracy
+        validation_acc = get_accuracy(validation_loader, model, device) * 100
+        validation_accuracies.append(validation_acc)
         # Timing
         total_epoch_time = time.time() - epoch_start_time
         time_per_epoch.append(total_epoch_time)
@@ -91,31 +88,23 @@ def train(model, criterion, optimizer, train_loader, test_loader, num_epochs, ba
         if writer:
             writer.add_scalar('training loss', train_loss, epoch)
             writer.add_scalar('training accuracy', train_acc, epoch)
-            writer.add_scalar('test accuracy', test_acc, epoch)
+            writer.add_scalar('validation accuracy', validation_acc, epoch)
         print('\n=== Epoch %d/%d ===' % (epoch + 1, num_epochs))
-        print('loss: %.3f' % train_loss)
-        print('accuracy: %f' % train_acc)
-        print('test_accuracy: %f' % test_acc)
-        print('epoch duration: %s' % time.strftime('%H:%M:%S', time.gmtime(total_epoch_time)))
-        print('elapsed/remaining time: %s/%s' % (
+        print('Loss: %.3f' % train_loss)
+        print('Train accuracy: %f' % train_acc)
+        print('Validation accuracy: %f' % validation_acc)
+        print('Epoch duration: %s' % time.strftime('%H:%M:%S', time.gmtime(total_epoch_time)))
+        print('Elapsed / Remaining time: %s/%s' % (
             time.strftime('%H:%M:%S', time.gmtime(total_time)), time.strftime('%H:%M:%S', time.gmtime(remaining_time))))
 
-    print('Maximum test accuracy achieved: %f' % np.array(test_accuracies).max())
+    print('Maximum validation accuracy achieved: %f' % np.array(validation_accuracies).max())
 
     # Save the model after finished training. Add the number of epochs and
     # batch size in the filename for clarity
+    # TODO save the biggest validation accuracy model
     save_model(model, 'ep%d_bs%d.pt' % (num_epochs, batch_size))
 
-    # plot results
-    plot_accuracy(train_acc=train_accuracies, test_acc=test_accuracies, save=True)
-    plot_loss(losses, save=True)
-    plot_confusion_matrix(
-        cm=get_confusion_matrix(test_loader, model, device),
-        title='Confusion Matrix - Percentage %',
-        normalize=True,
-        save=True,
-        classes=UtdMhadDatasetConfig().get_class_names()
-    )
+    return train_accuracies, validation_accuracies, losses
 
 
 def get_accuracy(data_loader, model, device):

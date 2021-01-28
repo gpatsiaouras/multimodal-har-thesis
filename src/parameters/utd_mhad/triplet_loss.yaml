@@ -1,0 +1,6 @@
+modalities:
+  inertial:
+    num_epochs: 400
+    criterion:
+      class_name: TripletLossHard
+      from_module: losses

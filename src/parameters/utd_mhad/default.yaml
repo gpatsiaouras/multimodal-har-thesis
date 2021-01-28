@@ -8,7 +8,6 @@ modalities:
         from_module: transforms
         in_test: true
         args:
-          - 'inertial'
           - [ -0.62575306, -0.26179606, -0.07613295, 3.70461374, -4.34395205, -0.09911604 ]
           - [ 0.6440941, 0.46361165, 0.43402348, 87.2470291, 100.86503743, 107.77852571 ]
       - class_name: Sampler
@@ -85,7 +84,6 @@ modalities:
         from_module: transforms
         in_test: true
         args:
-          - 'skeleton'
           - [ -0.09214367,-0.29444627, 2.87122181 ]
           - [ 0.13432376, 0.46162172, 0.12374677 ]
       - class_name: CropToSize
@@ -124,3 +122,9 @@ modalities:
 dataset:
   class_name: UtdMhadDataset
   shuffle: true
+  train_kwargs:
+    subjects: [ 1, 3, 5, 7 ]
+  validation_kwargs:
+    subjects: [ 2, 4 ]
+  test_kwargs:
+    subjects: [ 6, 8 ]

@@ -1,11 +1,6 @@
-from configurators import UtdMhadDatasetConfig
 from datasets import UtdMhadDataset
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-
-from transforms import Normalize, RandomEulerRotation, Compose
-
-dataset_config = UtdMhadDatasetConfig()
 
 # Parameters (change accordingly)
 n_frames = 125
@@ -13,14 +8,7 @@ continuous = True
 fix_view_point = False
 normalize = True
 
-utdMhadConfig = UtdMhadDatasetConfig()
-mean = utdMhadConfig.modalities['skeleton']['mean']
-std = utdMhadConfig.modalities['skeleton']['std']
-
-train_dataset = UtdMhadDataset(modality='skeleton', train=True, transform=Compose([
-    Normalize('skeleton', mean, std),
-    RandomEulerRotation(-5, 5, 5),
-]))
+train_dataset = UtdMhadDataset(modality='skeleton', subjects=[1])
 
 # set limits to display properly, or if dataset is normalized use just 0 and 1
 x_lim_min = -0.35 if not normalize else -3
@@ -81,11 +69,11 @@ def update_joints(frame):
             sample[frame, i, 0],
             sample[frame, i, 2],
             sample[frame, i, 1],
-            str(dataset_config.joint_names[i]),
+            str(train_dataset.joint_names[i]),
             size='x-small'
         )
     # Print lines connecting the joints
-    for bone in dataset_config.bones:
+    for bone in train_dataset.bones:
         ax.plot(
             [sample[frame, bone[0], 0], sample[frame, bone[1], 0]],
             [sample[frame, bone[0], 2], sample[frame, bone[1], 2]],

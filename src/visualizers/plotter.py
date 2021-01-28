@@ -55,18 +55,18 @@ def plot_inertial(data, title, y_label, save=False):
     fig.show()
 
 
-def plot_accuracy(train_acc, test_acc=None, save=False):
+def plot_accuracy(train_acc, validation_acc=None, save=False):
     """
     Plots a list of accuracies over epochs
     :param train_acc: list
-    :param test_acc: list
+    :param validation_acc: list
     :param save: Save figure to file
     """
     plt.style.use('seaborn-whitegrid')
     fig, ax = plt.subplots()
     ax.plot(train_acc, label='Train')
-    if test_acc is not None:
-        ax.plot(test_acc, label='Test')
+    if validation_acc is not None:
+        ax.plot(validation_acc, label='Test')
     ax.set(title='Accuracy', ylabel='% of correct classification', xlabel='Epochs')
     ax.legend()
     if save:
