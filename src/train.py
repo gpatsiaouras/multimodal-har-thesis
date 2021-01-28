@@ -1,8 +1,10 @@
 import argparse
 import importlib
-
+import time
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 import datasets
 import models
@@ -70,18 +72,32 @@ print_table({
     'num_epochs': num_epochs,
 })
 
+# Initiate Tensorboard writer
+writer = SummaryWriter('../logs/%s_%s_%s_%s' % (
+    SelectedDataset.__name__,
+    modality,
+    args.param_file.split('/')[-1],
+    time.strftime("%Y%m%d_%H%M", time.localtime())
+))
+model = model.double()
+data, labels = next(iter(train_loader))
+writer.add_graph(model, data)
+
 train_acc, validation_acc, loss = train(model, criterion, optimizer, train_loader, validation_loader, num_epochs,
-                                        batch_size, device)
+                                        batch_size, device, writer)
 
 # plot results
-plot_accuracy(train_acc=train_acc, validation_acc=validation_acc, save=True)
-plot_loss(loss, save=True)
-plot_confusion_matrix(
+plot_accuracy(train_acc=train_acc, validation_acc=validation_acc, save=False)
+plot_loss(loss, save=False)
+cm_image = plot_confusion_matrix(
     cm=get_confusion_matrix(validation_loader, model, device),
     title='Confusion Matrix - Percentage % - Validation dataset',
     normalize=True,
     save=True,
-    classes=train_dataset.get_class_names()
+    classes=train_dataset.get_class_names(),
+    show_figure=False
 )
+
+writer.add_images('ConfusionMatrix/Validation', cm_image, dataformats='CHW')
 
 print('Test accuracy %f' % get_accuracy(test_loader, model, device))

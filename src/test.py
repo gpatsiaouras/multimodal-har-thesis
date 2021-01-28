@@ -63,8 +63,9 @@ else:
 print('Test Accuracy: %f' % test_accuracy)
 plot_confusion_matrix(
     cm=cm,
-    title='Confusion Matrix - Percentage %',
+    title='Confusion Matrix - Percentage % - Test Loader',
     normalize=True,
     save=False,
+    show_figure=True,
     classes=test_dataset.get_class_names()
 )

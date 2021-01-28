@@ -55,12 +55,13 @@ def plot_inertial(data, title, y_label, save=False):
     fig.show()
 
 
-def plot_accuracy(train_acc, validation_acc=None, save=False):
+def plot_accuracy(train_acc, validation_acc=None, save=False, show_figure=True):
     """
     Plots a list of accuracies over epochs
     :param train_acc: list
     :param validation_acc: list
     :param save: Save figure to file
+    :param show_figure: fig.show() when true
     """
     plt.style.use('seaborn-whitegrid')
     fig, ax = plt.subplots()
@@ -71,14 +72,16 @@ def plot_accuracy(train_acc, validation_acc=None, save=False):
     ax.legend()
     if save:
         _save_plot(fig, '%s.png' % 'accu')
-    fig.show()
+    if show_figure:
+        fig.show()
 
 
-def plot_loss(data, save=False):
+def plot_loss(data, save=False, show_figure=True):
     """
     Plots a list of losses over epochs
     :param data: list
     :param save: Save figure to file
+    :param show_figure: fig.show() when true
     """
     plt.style.use('seaborn-whitegrid')
     fig, ax = plt.subplots()
@@ -87,16 +90,28 @@ def plot_loss(data, save=False):
     ax.legend()
     if save:
         _save_plot(fig, '%s.png' % 'loss')
-    fig.show()
+    if show_figure:
+        fig.show()
 
 
-def plot_confusion_matrix(cm, classes, title='Confusion matrix', normalize=False, save=False,
-                          cmap=plt.get_cmap('Blues')):
+def plot_confusion_matrix(cm, classes, title='Confusion matrix', normalize=False, save=False, show_figure=True):
+    """
+    Plots the confusion matrix using matplotlib, saves if selected and returns the rendered image to use with
+    tensorboard
+    :param cm: confusion matrix data
+    :param classes: List of classes with names
+    :param title: Title of the figure
+    :param normalize: Normalizing the values pulls the numbers between 0 - 100%
+    :param save: If it should save the figure as an image in the local filesystem
+    :param show_figure: True to show the figure locally
+    :return: image of the figure (for tensorboard)
+    """
     if normalize:
         cm = cm / cm.sum(axis=1)[:, np.newaxis]
         cm = cm * 100  # Make it percentage from 0-100%
 
     plt.style.use('default')
+    cmap = plt.get_cmap('Blues')
     fig, ax = plt.subplots(figsize=(11, 11))  # Set the size manually for the plot to be drawn correctly
     im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
     ax.set(title=title, ylabel='True label', xlabel='Predicted label')
@@ -117,7 +132,14 @@ def plot_confusion_matrix(cm, classes, title='Confusion matrix', normalize=False
     fig.tight_layout()
     if save:
         _save_plot(fig, '%s.png' % 'CM')
-    fig.show()
+
+    if show_figure:
+        fig.show()
+
+    fig.canvas.draw()
+    image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8').reshape((1100, 1100, 3)).transpose((2, 0, 1))
+
+    return image
 
 
 def _save_plot(fig, filename):

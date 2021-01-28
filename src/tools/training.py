@@ -42,7 +42,7 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
             # Turn inference mode off (in case)
             model.train()
             # Get data to cuda if possible
-            data = data.to(device).float()
+            data = data.to(device)
             labels = labels.to(device)
 
             # forward
@@ -86,9 +86,9 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
 
         # Tensorboard
         if writer:
-            writer.add_scalar('training loss', train_loss, epoch)
-            writer.add_scalar('training accuracy', train_acc, epoch)
-            writer.add_scalar('validation accuracy', validation_acc, epoch)
+            writer.add_scalar('Loss/train', train_loss, epoch)
+            writer.add_scalar('Accuracy/train', train_acc, epoch)
+            writer.add_scalar('Accuracy/Validation', validation_acc, epoch)
         print('\n=== Epoch %d/%d ===' % (epoch + 1, num_epochs))
         print('Loss: %.3f' % train_loss)
         print('Train accuracy: %f' % train_acc)
@@ -191,8 +191,8 @@ def get_predictions(data_loader, model, device, skip_last_fc=False):
     all_labels = torch.tensor([], device=device)
 
     for (data, labels) in data_loader:
-        data = data.to(device).float()
-        labels = labels.float().to(device=device)
+        data = data.to(device)
+        labels = labels.to(device=device)
 
         out = model(data, skip_last_fc)
         if skip_last_fc:
