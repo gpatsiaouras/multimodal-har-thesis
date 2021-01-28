@@ -9,6 +9,7 @@ def save_model(model, filename):
     Saves the model state_dict in a folder saved_model with a filename containing datatime info and the model name
     :param model: Model object
     :param filename: name of the file to be saved
+    :return path_to_save: Where the file was saved
     """
     # Default directory to save models is project_root/saved_models. If it doesn't exist create it
     save_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'saved_models')
@@ -20,4 +21,7 @@ def save_model(model, filename):
     filename = '_'.join([datetime, model.name, filename])
 
     # Save the model in the saved_models/ directory
-    torch.save(model.state_dict(), os.path.join(save_dir, filename))
+    path_to_save = os.path.join(save_dir, filename)
+    torch.save(model.state_dict(), path_to_save)
+
+    return path_to_save

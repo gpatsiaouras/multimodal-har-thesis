@@ -1,6 +1,6 @@
+import os
 import time
 
-import numpy as np
 import torch
 import torch.nn.functional as functional
 from sklearn.metrics import confusion_matrix
@@ -29,6 +29,7 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
     train_accuracies = []
     validation_accuracies = []
     losses = []
+    saved_model_path = None
 
     # Train Network
     for epoch in range(num_epochs):
@@ -74,13 +75,16 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
         train_accuracies.append(train_acc)
         # Validation accuracy
         validation_acc = get_accuracy(validation_loader, model, device) * 100
+        # Save the model if the validation accuracy is the highest
+        if len(validation_accuracies) > 0 and validation_acc > max(validation_accuracies):
+            if saved_model_path is not None:
+                os.remove(saved_model_path)
+            saved_model_path = save_model(model, 'ep%d_bs%d.pt' % (num_epochs, batch_size))
         validation_accuracies.append(validation_acc)
         # Timing
         total_epoch_time = time.time() - epoch_start_time
         time_per_epoch.append(total_epoch_time)
         total_time = time.time() - start_time
-
-        # REMOVE
         avg_time_per_epoch = sum(time_per_epoch) / len(time_per_epoch)
         remaining_time = (num_epochs - epoch) * avg_time_per_epoch
 
@@ -89,6 +93,8 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
             writer.add_scalar('Loss/train', train_loss, epoch)
             writer.add_scalar('Accuracy/train', train_acc, epoch)
             writer.add_scalar('Accuracy/Validation', validation_acc, epoch)
+
+        # Debug information
         print('\n=== Epoch %d/%d ===' % (epoch + 1, num_epochs))
         print('Loss: %.3f' % train_loss)
         print('Train accuracy: %f' % train_acc)
@@ -97,12 +103,7 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
         print('Elapsed / Remaining time: %s/%s' % (
             time.strftime('%H:%M:%S', time.gmtime(total_time)), time.strftime('%H:%M:%S', time.gmtime(remaining_time))))
 
-    print('Maximum validation accuracy achieved: %f' % np.array(validation_accuracies).max())
-
-    # Save the model after finished training. Add the number of epochs and
-    # batch size in the filename for clarity
-    # TODO save the biggest validation accuracy model
-    save_model(model, 'ep%d_bs%d.pt' % (num_epochs, batch_size))
+    print('Maximum validation accuracy achieved: %f' % max(validation_accuracies))
 
     return train_accuracies, validation_accuracies, losses
 
