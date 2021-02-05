@@ -5,20 +5,22 @@ import scipy.io
 import torch
 import yaml
 from torch.utils.data import Dataset
-
+from operator import itemgetter
 from .functions import read_image, read_video, create_jpg_image
 
 UTD_MHAD_YAML_CONFIG = 'utd_mhad.yaml'
 
 
 class UtdMhadDataset(Dataset):
-    def __init__(self, modality, subjects=None, repetitions=None, transform=None):
+    def __init__(self, modality, actions=None, subjects=None, repetitions=None, transform=None):
         """
         Initializes the utd mhad dataset for a specific modality.
-        If train is true, it returns train set, otherwise it returns test set
+        Can specify actions subjects and repetitions.
         Transforms are applied to the data when __get__ is called.
         :param modality: string
-        :param train: boolean
+        :param actions: list
+        :param subjects: list
+        :param repetitions: list
         :param transform: Transform
         """
         self.dataset_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'datasets', 'utd_mhad')
@@ -36,6 +38,8 @@ class UtdMhadDataset(Dataset):
         file.close()
 
         self.filenames = []
+        if actions is not None:
+            self.actions = itemgetter(*actions)(self.actions)
         if subjects is not None:
             self.subjects = subjects
         if repetitions is not None:
@@ -47,7 +51,7 @@ class UtdMhadDataset(Dataset):
     def get_filename(self, action, modality, subject, repetition):
         """
         Returns the name of the file for that chunk of data
-        :param action: dict
+        :param action: int
         :param modality: dict
         :param subject: int
         :param repetition: int
@@ -56,7 +60,7 @@ class UtdMhadDataset(Dataset):
         return '{}/{}/a{}_s{}_t{}_{}.{}'.format(
             self.dataset_dir,
             modality['folder_name'],
-            action['file_id'],
+            action,
             subject,
             repetition,
             modality['file_alias'],
@@ -68,11 +72,11 @@ class UtdMhadDataset(Dataset):
         Creates a list of the filenames for every action, subject and repetition
         :return:
         """
-        for actionKey, actionValue in self.actions.items():
+        for actionObj in self.actions:
             for subject in self.subjects:
                 for repetition in self.repetitions:
                     filename = self.get_filename(
-                        action=self.actions[actionKey],
+                        action=actionObj['file_id'],
                         modality=self.modality,
                         subject=subject,
                         repetition=repetition)
@@ -83,10 +87,10 @@ class UtdMhadDataset(Dataset):
                     # and we ignore it
                     if os.path.isfile(filename):
                         self.filenames.append(filename)
-                        self.labels.append(actionValue['file_id'])
+                        self.labels.append(actionObj['file_id'])
                     elif self.modality['folder_name'] == 'SDFDI':
                         video_filename = self.get_filename(
-                            action=self.actions[actionKey],
+                            action=actionObj['file_id'],
                             modality=self.modalities['rgb'],
                             subject=subject,
                             repetition=repetition)
@@ -94,7 +98,7 @@ class UtdMhadDataset(Dataset):
                             print('Item %s doesn\'t exist. Creating...' % filename)
                             create_jpg_image(filename, video_filename)
                             self.filenames.append(filename)
-                            self.labels.append(actionValue['file_id'])
+                            self.labels.append(actionObj['file_id'])
 
     def __len__(self):
         """
@@ -139,6 +143,6 @@ class UtdMhadDataset(Dataset):
         """
         Returns a list of action names (classes)
         Used in confusion matrix printing
-        :return:
+        :return: list
         """
-        return [action for action in self.actions]
+        return [action['name'] for action in self.actions]

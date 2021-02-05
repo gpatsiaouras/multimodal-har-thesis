@@ -6,7 +6,7 @@ import matplotlib.animation as animation
 n_frames = 125
 continuous = True
 fix_view_point = False
-normalize = True
+normalize = False
 
 train_dataset = UtdMhadDataset(modality='skeleton', subjects=[1])
 

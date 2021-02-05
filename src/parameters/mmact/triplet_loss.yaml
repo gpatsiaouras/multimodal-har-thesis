@@ -1,6 +1,6 @@
 modalities:
-  inertial:
-    num_epochs: 100
+  acc_phone:
+    num_epochs: 400
     criterion:
       class_name: TripletLossHard
       from_module: losses

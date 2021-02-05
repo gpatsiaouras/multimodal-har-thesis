@@ -13,6 +13,7 @@ class CNN1D(nn.Module):
                  pool_padding=0,
                  pool_size=2,
                  dropout_rate=0.8,
+                 norm_out=False,
                  fc_size=2048):
         """
         Initiate layers of a 5 convolutions layer network
@@ -25,6 +26,7 @@ class CNN1D(nn.Module):
 
         self.name = 'CNN1D'
         self.num_layers = len(out_channels)
+        self.norm_out = norm_out
         self.pool = nn.MaxPool1d(kernel_size=pool_size, stride=None)
         self.dropout = nn.Dropout(p=dropout_rate, inplace=True)
         self.relu = nn.ReLU(inplace=True)
@@ -55,7 +57,7 @@ class CNN1D(nn.Module):
         self.fc2 = nn.Linear(fc_size, fc_size)
         self.fc3 = nn.Linear(fc_size, out_size)
 
-    def forward(self, x, skip_last_fc=False):
+    def forward(self, x):
         # Add a dimension in the middle because we only have one channel of data
         x = x.unsqueeze(1)
 
@@ -75,8 +77,11 @@ class CNN1D(nn.Module):
         x = self.fc1(x)
         x = self.dropout(x)
         x = self.fc2(x)
-        if not skip_last_fc:
-            x = self.dropout(x)
-            x = self.fc3(x)
+        x = self.dropout(x)
+        x = self.fc3(x)
+
+        if self.norm_out:
+            norm = x.norm(p=2, dim=1, keepdim=True)
+            x = x.div(norm)
 
         return x

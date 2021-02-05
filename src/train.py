@@ -10,13 +10,16 @@ import datasets
 import models
 from datasets import get_transforms_from_config, AVAILABLE_MODALITIES
 from tools import load_yaml, train, get_confusion_matrix, get_accuracy
-from visualizers import print_table, plot_loss, plot_accuracy, plot_confusion_matrix
+from visualizers import print_table, plot_confusion_matrix
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--modality', choices=AVAILABLE_MODALITIES, default='inertial')
 parser.add_argument('--gpu', type=int, default=0, help='Only applicable when cuda gpu is available')
 parser.add_argument('--param_file', type=str, default='parameters/utd_mhad/default.yaml')
 parser.add_argument('--epochs', type=int, default=None)
+parser.add_argument('--experiment', type=str, default=None)
+parser.add_argument('--bs', type=int, default=None)
+parser.add_argument('--lr', type=float, default=None)
 args = parser.parse_args()
 
 # Select device
@@ -33,8 +36,8 @@ param_config = load_yaml(args.param_file)
 modality = args.modality
 SelectedDataset = getattr(datasets, param_config.get('dataset').get('class_name'))
 transforms, test_transforms = get_transforms_from_config(param_config.get('modalities').get(modality).get('transforms'))
-learning_rate = param_config.get('modalities').get(modality).get('learning_rate')
-batch_size = param_config.get('modalities').get(modality).get('batch_size')
+learning_rate = param_config.get('modalities').get(modality).get('learning_rate') if args.lr is None else args.lr
+batch_size = param_config.get('modalities').get(modality).get('batch_size') if args.bs is None else args.bs
 num_epochs = param_config.get('modalities').get(modality).get('num_epochs') if args.epochs is None else args.epochs
 shuffle = param_config.get('dataset').get('shuffle')
 model_class_name = param_config.get('modalities').get(modality).get('model').get('class_name')
@@ -56,51 +59,79 @@ test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=sh
 
 # Initiate the model
 model = getattr(models, model_class_name)(*param_config.get('modalities').get(modality).get('model').get('args'))
-model = model.double()
+model = model.to(device)
 
 # Loss and optimizer
 criterion = getattr(importlib.import_module(criterion_from), criterion)()
 optimizer = getattr(importlib.import_module(optimizer_from), optimizer)(model.parameters(), learning_rate)
 
+# Initiate Tensorboard writer with the given experiment name or generate an automatic one
+experiment = '%s_%s_%s_%s' % (
+    SelectedDataset.__name__,
+    modality,
+    args.param_file.split('/')[-1],
+    time.strftime("%Y%m%d_%H%M", time.localtime())
+) if args.experiment is None else args.experiment
+writer_name = '../logs/%s' % experiment
+writer = SummaryWriter(writer_name)
+
+# Start training
+train_accs, validation_accs, train_losses, validation_losses, last_step = train(
+    model=model,
+    criterion=criterion,
+    optimizer=optimizer,
+    train_loader=train_loader,
+    validation_loader=validation_loader,
+    num_epochs=num_epochs,
+    device=device,
+    experiment=experiment,
+    writer=writer
+)
+
+cm_image_train = plot_confusion_matrix(
+    cm=get_confusion_matrix(train_loader, model, device),
+    title='Confusion Matrix - Training',
+    normalize=False,
+    save=False,
+    classes=train_dataset.get_class_names(),
+    show_figure=False
+)
+cm_image_validation = plot_confusion_matrix(
+    cm=get_confusion_matrix(validation_loader, model, device),
+    title='Confusion Matrix - Validation',
+    normalize=False,
+    save=False,
+    classes=validation_dataset.get_class_names(),
+    show_figure=False
+)
+cm_image_test = plot_confusion_matrix(
+    cm=get_confusion_matrix(test_loader, model, device),
+    title='Confusion Matrix - Test',
+    normalize=False,
+    save=False,
+    classes=test_dataset.get_class_names(),
+    show_figure=False
+)
+
+# Add confusion matrices for each dataset, mark it for the last step which is num_epochs - 1
+writer.add_images('ConfusionMatrix/Train', cm_image_train, dataformats='CHW', global_step=last_step)
+writer.add_images('ConfusionMatrix/Validation', cm_image_validation, dataformats='CHW', global_step=last_step)
+writer.add_images('ConfusionMatrix/Test', cm_image_test, dataformats='CHW', global_step=last_step)
+
+print('Best validation accuracy %f' % max(validation_accs))
+print('Test accuracy %f' % get_accuracy(test_loader, model, device))
+
 # Print parameters
 print_table({
     'param_file': args.param_file,
+    'experiment': experiment,
+    'tensorboard_folder': writer_name,
     'dataset': SelectedDataset.__name__,
+    'criterion': type(criterion).__name__,
+    'optimizer': type(optimizer).__name__,
     'modality': modality,
     'model': model.name,
     'learning_rate': learning_rate,
     'batch_size': batch_size,
     'num_epochs': num_epochs,
 })
-
-# Initiate Tensorboard writer
-writer = SummaryWriter('../logs/%s_%s_%s_%s' % (
-    SelectedDataset.__name__,
-    modality,
-    args.param_file.split('/')[-1],
-    time.strftime("%Y%m%d_%H%M", time.localtime())
-))
-data, labels = next(iter(train_loader))
-writer.add_graph(model, data)
-
-# Last thing transfer the file to cuda (if applicable). Don't transfer before tensorboard add graph
-model = model.to(device)
-
-train_acc, validation_acc, loss = train(model, criterion, optimizer, train_loader, validation_loader, num_epochs,
-                                        batch_size, device, writer)
-
-# plot results
-plot_accuracy(train_acc=train_acc, validation_acc=validation_acc, save=False)
-plot_loss(loss, save=False)
-cm_image = plot_confusion_matrix(
-    cm=get_confusion_matrix(validation_loader, model, device),
-    title='Confusion Matrix - Percentage % - Validation dataset',
-    normalize=False,
-    save=True,
-    classes=train_dataset.get_class_names(),
-    show_figure=False
-)
-
-writer.add_images('ConfusionMatrix/Validation', cm_image, dataformats='CHW')
-
-print('Test accuracy %f' % get_accuracy(test_loader, model, device))

@@ -1,0 +1,17 @@
+modalities:
+  acc_phone:
+    num_epochs: 5
+
+dataset:
+  train_kwargs:
+    subjects: [ 1 ]
+    sessions: [ 1, 2, 3, 4, 5 ]
+    scenes: [ 1 ]
+  validation_kwargs:
+    subjects: [ 1 ]
+    sessions: [ 1, 2, 3, 4, 5 ]
+    scenes: [ 1 ]
+  test_kwargs:
+    subjects: [ 1 ]
+    sessions: [ 1, 2, 3, 4, 5 ]
+    scenes: [ 1 ]

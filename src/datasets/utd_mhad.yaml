@@ -69,111 +69,111 @@ modalities:
     std: 25.592565539434137
 
 actions:
-  swipe_left:
+  - name: swipe_left
     file_id: 1
     description: right arm swipe to the left
     position: wrist
-  swipe_right:
+  - name: swipe_right
     file_id: 2
     description: right arm swipe to the right
     position: wrist
-  wave:
+  - name: wave
     file_id: 3
     description: right hand wave
     position: wrist
-  clap:
+  - name: clap
     file_id: 4
     description: two hand front clap
     position: wrist
-  throw:
+  - name: throw
     file_id: 5
     description: right arm throw
     position: wrist
-  arm_cross:
+  - name: arm_cross
     file_id: 6
     description: cross arms in the chest
     position: wrist
-  basketball_shoot:
+  - name: basketball_shoot
     file_id: 7
     description: basketball shoot
     position: wrist
-  draw_x:
+  - name: draw_x
     file_id: 8
     description: right hand draw x
     position: wrist
-  draw_circle_cw:
+  - name: draw_circle_cw
     file_id: 9
     description: right hand draw circle (clockwise)
     position: wrist
-  draw_circle_ccw:
+  - name: draw_circle_ccw
     file_id: 10
     description: right hand draw circle (counter clockwise)
     position: wrist
-  draw_triangle:
+  - name: draw_triangle
     file_id: 11
     description: draw triangle
     position: wrist
-  bowling:
+  - name: bowling
     file_id: 12
     description: bowling (right hand)
     position: wrist
-  boxing:
+  - name: boxing
     file_id: 13
     description: front boxing
     position: wrist
-  baseball_swing:
+  - name: baseball_swing
     file_id: 14
     description: baseball swing from right
     position: wrist
-  tennis_swing:
+  - name: tennis_swing
     file_id: 15
     description: tennis right hand forehand swing
     position: wrist
-  arm_curl:
+  - name: arm_curl
     file_id: 16
     description: arm curl (two arms)
     position: wrist
-  tennis_serve:
+  - name: tennis_serve
     file_id: 17
     description: tennis serve
     position: wrist
-  push:
+  - name: push
     file_id: 18
     description: two hand push
     position: wrist
-  knock:
+  - name: knock
     file_id: 19
     description: right hand knock on door
     position: wrist
-  catch:
+  - name: catch
     file_id: 20
     description: right hand catch an object
     position: wrist
-  pickup_throw:
+  - name: pickup_throw
     file_id: 21
     description: right hand pick up and throw
     position: wrist
-  jog:
+  - name: jog
     file_id: 22
     description: jogging in place
     position: thigh
-  walk:
+  - name: walk
     file_id: 23
     description: walking in place
     position: thigh
-  sit2stand:
+  - name: sit2stand
     file_id: 24
     description: sit to stand
     position: thigh
-  stand2sit:
+  - name: stand2sit
     file_id: 25
     description: stand to sit
     position: thigh
-  lunge:
+  - name: lunge
     file_id: 26
     description: forward lunge (left foot forward)
     position: thigh
-  squat:
+  - name: squat
     file_id: 27
     description: squat (two arms stretch out)
     position: thigh

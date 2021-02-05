@@ -4,7 +4,6 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader
 
-from configurators import UtdMhadDatasetConfig
 from datasets import UtdMhadDataset
 from models import ELM, CNN1D, MobileNetV2, BiLSTM
 from tools import get_fused_feature_vector, get_predictions
@@ -26,40 +25,40 @@ selected_joints = [0, 5, 7, 9, 11, 13, 15, 17, 19]
 input_size_skeleton = len(selected_joints) * 3  # input size is joints times axis (per joint)
 sequence_length = num_frames
 
-utdMhadConfig = UtdMhadDatasetConfig()
-normalizeInertial = Normalize('inertial',
-                              utdMhadConfig.modalities['inertial']['mean'], utdMhadConfig.modalities['inertial']['std'])
-normalizeSkeleton = Normalize('skeleton',
-                              utdMhadConfig.modalities['skeleton']['mean'], utdMhadConfig.modalities['skeleton']['std'])
+inertial_mean = [-0.62575306, -0.26179606, -0.07613295, 3.70461374, -4.34395205, -0.09911604]
+inertial_std = [0.6440941, 0.46361165, 0.43402348, 87.2470291, 100.86503743, 107.77852571]
+skeleton_mean = [-0.09214367, -0.29444627, 2.87122181]
+skeleton_std = [0.13432376, 0.46162172, 0.12374677]
+
 # Datasets initialization train/test
-train_dataset_inertial = UtdMhadDataset(modality='inertial', train=True, transform=Compose([
-    normalizeInertial,
+train_dataset_inertial = UtdMhadDataset(modality='inertial', subjects=[1, 3, 5, 7], transform=Compose([
+    Normalize(inertial_mean, inertial_std),
     Sampler(107),
     FilterDimensions([0, 1, 2]),
     Flatten(),
 ]))
-test_dataset_inertial = UtdMhadDataset(modality='inertial', train=False, transform=Compose([
-    normalizeInertial,
+test_dataset_inertial = UtdMhadDataset(modality='inertial', subjects=[6, 8], transform=Compose([
+    Normalize(inertial_mean, inertial_std),
     Sampler(107),
     FilterDimensions([0, 1, 2]),
     Flatten(),
 ]))
-train_dataset_rgb = UtdMhadDataset(modality='sdfdi', train=True, transform=Compose([
+train_dataset_rgb = UtdMhadDataset(modality='sdfdi', subjects=[1, 3, 5, 7], transform=Compose([
     torchvision.transforms.Resize(224),
     torchvision.transforms.ToTensor()
 ]))
-test_dataset_rgb = UtdMhadDataset(modality='sdfdi', train=False, transform=Compose([
+test_dataset_rgb = UtdMhadDataset(modality='sdfdi', subjects=[6, 8], transform=Compose([
     torchvision.transforms.Resize(224),
     torchvision.transforms.ToTensor()
 ]))
-train_dataset_skeleton = UtdMhadDataset(modality='skeleton', train=True, transform=Compose([
-    normalizeSkeleton,
+train_dataset_skeleton = UtdMhadDataset(modality='skeleton', subjects=[1, 3, 5, 7], transform=Compose([
+    Normalize(skeleton_mean, skeleton_std),
     Resize(num_frames),
     FilterJoints(selected_joints),
     Flatten(),
 ]))
-test_dataset_skeleton = UtdMhadDataset(modality='skeleton', train=False, transform=Compose([
-    normalizeSkeleton,
+test_dataset_skeleton = UtdMhadDataset(modality='skeleton', subjects=[6, 8], transform=Compose([
+    Normalize(skeleton_mean, skeleton_std),
     Resize(num_frames),
     FilterJoints(selected_joints),
     Flatten(),
@@ -74,7 +73,7 @@ train_loader_skeleton = DataLoader(dataset=train_dataset_skeleton, batch_size=ba
 test_loader_skeleton = DataLoader(dataset=test_dataset_skeleton, batch_size=batch_size)
 
 # Initialize models and load saved weights
-model_inertial = CNN1D().to(device)
+model_inertial = CNN1D(107 * 3, 27).to(device)
 model_inertial.load_state_dict(torch.load(sys.argv[1]))
 model_rgb = MobileNetV2(num_classes, pretrained=False).to(device)
 model_rgb.load_state_dict(torch.load(sys.argv[2]))
@@ -83,14 +82,14 @@ model_skeleton.load_state_dict(torch.load(sys.argv[3]))
 
 # Get predictions from each model for each loader
 print('Retrieving the 2048 feature vectors for all models...')
-train_data_inertial = get_predictions(train_loader_inertial, model_inertial, device, skip_last_fc=True)
-test_data_inertial = get_predictions(test_loader_inertial, model_inertial, device, skip_last_fc=True)
+train_data_inertial = get_predictions(train_loader_inertial, model_inertial, device, apply_softmax=False)
+test_data_inertial = get_predictions(test_loader_inertial, model_inertial, device, apply_softmax=False)
 print('Inertial.. OK')
-train_data_rgb = get_predictions(train_loader_rgb, model_rgb, device, skip_last_fc=True)
-test_data_rgb = get_predictions(test_loader_rgb, model_rgb, device, skip_last_fc=True)
+train_data_rgb = get_predictions(train_loader_rgb, model_rgb, device, apply_softmax=False)
+test_data_rgb = get_predictions(test_loader_rgb, model_rgb, device, apply_softmax=False)
 print('RGB.. OK')
-train_data_skeleton = get_predictions(train_loader_skeleton, model_skeleton, device, skip_last_fc=True)
-test_data_skeleton = get_predictions(test_loader_skeleton, model_skeleton, device, skip_last_fc=True)
+train_data_skeleton = get_predictions(train_loader_skeleton, model_skeleton, device, apply_softmax=False)
+test_data_skeleton = get_predictions(test_loader_skeleton, model_skeleton, device, apply_softmax=False)
 print('Skeleton.. OK')
 
 # Get fused data from all models
@@ -98,7 +97,7 @@ print('Performing feature fusion...')
 elm_train_data = get_fused_feature_vector(device, train_data_inertial, train_data_rgb)
 elm_test_data = get_fused_feature_vector(device, test_data_inertial, test_data_rgb)
 
-# Kelm initialization
+# Elm initialization
 elm = ELM(input_size=input_size, num_classes=num_classes, hidden_size=hidden_size, device=device)
 
 # Prepare data and labels, x and y

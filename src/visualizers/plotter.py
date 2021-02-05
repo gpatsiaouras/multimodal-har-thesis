@@ -138,7 +138,7 @@ def plot_confusion_matrix(cm, classes, title='Confusion matrix', normalize=False
 
     fig.canvas.draw()
     image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8').reshape((1100, 1100, 3)).transpose((2, 0, 1))
-
+    plt.close('all')
     return image
 
 

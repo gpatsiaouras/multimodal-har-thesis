@@ -31,17 +31,20 @@ class Jittering:
         if jitter_factor == 0:
             return x
         else:
-            jittered_x = np.zeros(x.shape)
-            # Seed random
-            np.random.seed(0)
-            for i in range(x.shape[1]):
-                data = x[:, i]
-                data_unique = np.unique(np.sort(data))
-                data_diff = np.diff(data_unique)
-                smallest_diff = np.min(data_diff)
-                scale_factor = 0.2 * jitter_factor * smallest_diff
-                jittered_x[:, i] = data + scale_factor * np.random.randn(x.shape[0])
-            return jittered_x
+            return self.apply(x, jitter_factor)
+
+    def apply(self, x, jitter_factor):
+        jittered_x = np.zeros(x.shape)
+        # Seed random
+        np.random.seed(0)
+        for i in range(x.shape[1]):
+            data = x[:, i]
+            data_unique = np.unique(np.sort(data))
+            data_diff = np.diff(data_unique)
+            smallest_diff = np.min(data_diff)
+            scale_factor = 0.2 * jitter_factor * smallest_diff
+            jittered_x[:, i] = data + scale_factor * np.random.randn(x.shape[0])
+        return jittered_x
 
 
 class Sampler:

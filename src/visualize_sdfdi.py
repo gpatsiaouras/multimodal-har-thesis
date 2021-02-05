@@ -1,8 +1,8 @@
-from datasets import MmactDataset
+from datasets import UtdMhadDataset
 from visualizers import frames_player
 
-datasetSDFDI = MmactDataset(modality='sdfdi')
-datasetRGB = MmactDataset(modality='video')
+datasetSDFDI = UtdMhadDataset(modality='sdfdi')
+datasetRGB = UtdMhadDataset(modality='rgb')
 
 # Retrieve one sample, the sample is already converted to an sdfdi image so just display it
 (sampleSDFDI, _) = datasetSDFDI[4]
