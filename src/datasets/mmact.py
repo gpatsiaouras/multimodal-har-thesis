@@ -5,7 +5,7 @@ import torch
 import yaml
 from torch.utils.data import Dataset
 
-from datasets.functions import read_video, create_jpg_image, read_csv, read_image
+from datasets.functions import read_video, create_jpg_image, read_csv, read_image, read_combine
 
 MMACT_YAML_CONFIG = 'mmact.yaml'
 
@@ -91,7 +91,23 @@ class MmactDataset(Dataset):
                                 print('Item %s doesn\'t exist. Creating...' % filename)
                                 create_jpg_image(filename, video_filename)
                                 self.filenames.append(filename)
-                                self.labels.append(self.actions[action_idx])
+                                self.labels.append(action_idx)
+                        elif self.modality['folder_name'] == 'inertial':
+                            filenames = []
+                            for submodality in self.modality['combine']:
+                                filename = self.get_filename(
+                                    action=self.actions[action_idx],
+                                    modality=self.modalities[submodality],
+                                    subject=subject,
+                                    scene=scene,
+                                    session=session,
+                                )
+                                if os.path.isfile(filename) and os.path.getsize(filename):
+                                    filenames.append(filename)
+                            # Only if we have all necessary files consider this a sample.
+                            if len(filenames) == len(self.modality['combine']):
+                                self.filenames.append(filenames)
+                                self.labels.append(action_idx)
 
     def __len__(self):
         """
@@ -104,7 +120,9 @@ class MmactDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        if self.modality['file_ext'] == 'csv':
+        if self.modality['file_ext'] == 'csv' and isinstance(self.filenames[idx], list):
+            data = read_combine(self.filenames[idx])
+        elif self.modality['file_ext'] == 'csv':
             data = read_csv(self.filenames[idx])
         elif self.modality['file_ext'] == 'mp4':
             data = read_video(self.filenames[idx])

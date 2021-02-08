@@ -21,6 +21,10 @@ modalities:
   sdfdi:
     folder_name: sdfdi
     file_ext: jpg
+  inertial:
+    combine: [ 'acc_phone', 'acc_watch', 'gyro', 'orientation' ]
+    folder_name: inertial
+    file_ext: csv
 
 actions:
   - exiting

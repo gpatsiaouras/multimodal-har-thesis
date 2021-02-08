@@ -5,6 +5,7 @@ import os
 import cv2
 import numpy as np
 from PIL import Image
+from scipy import signal
 
 import transforms
 from tools import generate_sdfdi
@@ -84,3 +85,31 @@ def get_transforms_from_config(transform_definitions):
             test_transforms.append(transform)
 
     return transforms.Compose(train_transforms), transforms.Compose(test_transforms)
+
+
+def read_combine(filenames):
+    """
+    Reads multiple files into one data representation by appending columns.
+    1. Reads all the files and saves them as numpy array
+    2. Keeps track of the minimum amount of steps
+    3. Resizes all data to be the minimum amount of steps to align the data
+    4. Stackes all the modalities into one representation
+    :param filenames: list of filenames
+    :return:
+    """
+    combined = []
+    min_steps = float('inf')
+    # Read the data from each of the files and save the minimum number of steps existing
+    for filename in filenames:
+        data = read_csv(filename)
+        if data.shape[0] < min_steps:
+            min_steps = data.shape[0]
+        combined.append(data)
+
+    # Iterate the different data again and reshape to the smallest one if needed to align
+    for data_idx in range(len(combined)):
+        if combined[data_idx].shape[0] > min_steps:
+            combined[data_idx] = signal.resample(combined[data_idx], min_steps)
+
+    stacked_data = np.hstack(combined)
+    return stacked_data

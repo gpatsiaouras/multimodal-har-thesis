@@ -56,9 +56,8 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
             loss = criterion(scores, input_indices)
 
             # train accuracy
-            pred_max_val, pred_max_id = scores.max(1)
-            num_correct += int((labels.argmax(1) == pred_max_id).sum())
-            num_samples += len(pred_max_id)
+            num_correct += get_num_correct_predictions(scores, labels)
+            num_samples += len(labels)
 
             # backward
             optimizer.zero_grad()
