@@ -189,13 +189,16 @@ dataset:
   shuffle: true
   train_kwargs:
     subjects: [ 1, 3, 5, 9 ]
+    actions: null
     sessions: [ 1, 2, 3, 4, 5 ]
     scenes: [ 1, 2, 3, 4 ]
   validation_kwargs:
     subjects: [ 2, 4 ]
+    actions: null
     sessions: [ 1, 2, 3, 4, 5 ]
     scenes: [ 1, 2, 3, 4 ]
   test_kwargs:
     subjects: [ 6, 8 ]
+    actions: null
     sessions: [ 1, 2, 3, 4, 5 ]
     scenes: [ 1, 2, 3, 4 ]

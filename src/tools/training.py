@@ -108,6 +108,24 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
     return train_accuracies, validation_accuracies, train_losses, validation_losses, step
 
 
+def add_histograms(writer, model, step):
+    """
+    Adds histogram data according to the model to tensorboard.
+    :param writer: SummaryWriter
+    :param model: Model
+    :param step: global step
+    :return:
+    """
+    if hasattr(model, 'fc1'):
+        writer.add_histogram('fc1', model.fc1.weight, global_step=step)
+    if hasattr(model, 'fc2'):
+        writer.add_histogram('fc2', model.fc2.weight, global_step=step)
+    if hasattr(model, 'fc3'):
+        writer.add_histogram('fc3', model.fc3.weight, global_step=step)
+    if hasattr(model, 'last_fc'):
+        writer.add_histogram('last_fc', model.last_fc.weight, global_step=step)
+
+
 def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, val_loader, num_epochs, device,
                        experiment, n_neighbors, writer):
     start_time = time.time()
@@ -145,9 +163,7 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
 
             # Tensorboard
             writer.add_scalar('Loss/train', loss.item(), global_step=step)
-            writer.add_histogram('fc1', model.fc1.weight, global_step=step)
-            writer.add_histogram('fc2', model.fc2.weight, global_step=step)
-            writer.add_histogram('fc3', model.fc3.weight, global_step=step)
+            add_histograms(writer, model, step)
 
             scores_concat = torch.cat((scores_concat, scores), dim=0)
             labels_concat = torch.cat((labels_concat, labels), dim=0)
