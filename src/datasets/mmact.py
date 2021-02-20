@@ -1,4 +1,5 @@
 import os
+from operator import itemgetter
 
 import numpy as np
 import torch
@@ -11,7 +12,7 @@ MMACT_YAML_CONFIG = 'mmact.yaml'
 
 
 class MmactDataset(Dataset):
-    def __init__(self, modality, transform=None, subjects=None, sessions=None, scenes=None):
+    def __init__(self, modality, transform=None, actions=None, subjects=None, sessions=None, scenes=None):
         self.dataset_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'datasets', 'mmact')
 
         # Read dataset configuration yaml file and assign variables
@@ -27,6 +28,8 @@ class MmactDataset(Dataset):
         file.close()
 
         # Assign user provided variables if given
+        if actions is not None:
+            self.actions = itemgetter(*actions)(self.actions)
         if subjects is not None:
             self.subjects = subjects
         if scenes is not None:

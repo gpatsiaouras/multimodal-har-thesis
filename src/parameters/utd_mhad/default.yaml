@@ -5,6 +5,7 @@ modalities:
       args:
         - 321
         - 27
+      kwargs: { }
     transforms:
       - class_name: Normalize
         from_module: transforms
@@ -45,6 +46,7 @@ modalities:
       class_name: MobileNetV2
       args:
         - 27
+      kwargs: { }
     transforms:
       - class_name: RandomResizedCrop
         from_module: torchvision.transforms
@@ -81,6 +83,7 @@ modalities:
         - 2
         # num_classes
         - 27
+      kwargs: { }
     transforms:
       - class_name: Normalize
         from_module: transforms
@@ -128,8 +131,8 @@ dataset:
     subjects: [ 1, 3, 5, 7 ]
     actions: null
   validation_kwargs:
-    subjects: [ 2, 4 ]
+    subjects: [ 2, 4, 6, 8 ]
     actions: null
   test_kwargs:
-    subjects: [ 6, 8 ]
+    subjects: [ 2, 4, 6, 8 ]
     actions: null

@@ -12,6 +12,8 @@ from datasets import get_transforms_from_config, AVAILABLE_MODALITIES
 from tools import load_yaml, train, get_confusion_matrix, get_accuracy
 from visualizers import print_table, plot_confusion_matrix
 
+torch.manual_seed(0)
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--modality', choices=AVAILABLE_MODALITIES, default='inertial')
 parser.add_argument('--gpu', type=int, default=0, help='Only applicable when cuda gpu is available')
@@ -34,17 +36,18 @@ param_config = load_yaml(args.param_file)
 
 # Assign parameters
 modality = args.modality
+modality_config = param_config.get('modalities').get(modality)
 SelectedDataset = getattr(datasets, param_config.get('dataset').get('class_name'))
-transforms, test_transforms = get_transforms_from_config(param_config.get('modalities').get(modality).get('transforms'))
-learning_rate = param_config.get('modalities').get(modality).get('learning_rate') if args.lr is None else args.lr
-batch_size = param_config.get('modalities').get(modality).get('batch_size') if args.bs is None else args.bs
-num_epochs = param_config.get('modalities').get(modality).get('num_epochs') if args.epochs is None else args.epochs
+transforms, test_transforms = get_transforms_from_config(modality_config.get('transforms'))
+learning_rate = modality_config.get('learning_rate') if args.lr is None else args.lr
+batch_size = modality_config.get('batch_size') if args.bs is None else args.bs
+num_epochs = modality_config.get('num_epochs') if args.epochs is None else args.epochs
 shuffle = param_config.get('dataset').get('shuffle')
-model_class_name = param_config.get('modalities').get(modality).get('model').get('class_name')
-criterion = param_config.get('modalities').get(modality).get('criterion').get('class_name')
-criterion_from = param_config.get('modalities').get(modality).get('criterion').get('from_module')
-optimizer = param_config.get('modalities').get(modality).get('optimizer').get('class_name')
-optimizer_from = param_config.get('modalities').get(modality).get('optimizer').get('from_module')
+model_class_name = modality_config.get('model').get('class_name')
+criterion = modality_config.get('criterion').get('class_name')
+criterion_from = modality_config.get('criterion').get('from_module')
+optimizer = modality_config.get('optimizer').get('class_name')
+optimizer_from = modality_config.get('optimizer').get('from_module')
 train_dataset_kwargs = param_config.get('dataset').get('train_kwargs')
 validation_dataset_kwargs = param_config.get('dataset').get('validation_kwargs')
 test_dataset_kwargs = param_config.get('dataset').get('test_kwargs')
@@ -58,7 +61,10 @@ test_dataset = SelectedDataset(modality=modality, transform=test_transforms, **t
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=shuffle)
 
 # Initiate the model
-model = getattr(models, model_class_name)(*param_config.get('modalities').get(modality).get('model').get('args'))
+model = getattr(models, model_class_name)(
+    *modality_config.get('model').get('args'),
+    **modality_config.get('model').get('kwargs')
+)
 model = model.to(device)
 
 # Loss and optimizer

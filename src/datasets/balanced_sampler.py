@@ -18,7 +18,7 @@ class BalancedSampler(BatchSampler):
     def __iter__(self):
         self.count = 0
         while self.count + self.batch_size < len(self.dataset):
-            classes = np.random.choice(self.unique_labels, self.n_classes, replace=False)
+            classes = np.random.choice(self.unique_labels, len(self.unique_labels), replace=False)
             indices = []
             for class_ in classes:
                 class_idx = np.where(self.labels == class_)[0]

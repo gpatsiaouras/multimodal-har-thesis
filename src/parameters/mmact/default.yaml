@@ -5,6 +5,7 @@ modalities:
       args:
         - 1284
         - 36
+      kwargs: { }
     transforms:
       - class_name: Normalize
         from_module: transforms
@@ -36,6 +37,7 @@ modalities:
       args:
         - 321
         - 36
+      kwargs: { }
     transforms:
       - class_name: Normalize
         from_module: transforms
@@ -67,6 +69,7 @@ modalities:
       args:
         - 321
         - 36
+      kwargs: { }
     transforms:
       - class_name: Normalize
         from_module: transforms
@@ -98,6 +101,7 @@ modalities:
       args:
         - 321
         - 36
+      kwargs: { }
     transforms:
       - class_name: Normalize
         from_module: transforms
@@ -129,6 +133,7 @@ modalities:
       args:
         - 321
         - 36
+      kwargs: { }
     transforms:
       - class_name: Normalize
         from_module: transforms
@@ -159,6 +164,7 @@ modalities:
       class_name: MobileNetV2
       args:
         - 36
+      kwargs: { }
     transforms:
       - class_name: RandomResizedCrop
         from_module: torchvision.transforms

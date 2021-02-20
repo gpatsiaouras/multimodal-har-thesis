@@ -29,6 +29,7 @@ class UtdMhadDataset(Dataset):
         file = open(os.path.join(os.path.dirname(__file__), UTD_MHAD_YAML_CONFIG))
         config = yaml.load(file, Loader=yaml.FullLoader)
         self.actions = config.get('actions')
+        self.class_names = [action['name'] for action in self.actions]
         self.modalities = config.get('modalities')
         self.modality = self.modalities[modality]
         self.joint_names = config.get('joint_names')
@@ -120,7 +121,7 @@ class UtdMhadDataset(Dataset):
         else:
             raise Exception('Unsupported extension: %s' % self.modality['file_ext'])
 
-        actions = np.zeros(len(self.actions))
+        actions = np.zeros(27)
         actions[self.labels[idx] - 1] = 1
 
         if self.transform:
@@ -145,4 +146,4 @@ class UtdMhadDataset(Dataset):
         Used in confusion matrix printing
         :return: list
         """
-        return [action['name'] for action in self.actions]
+        return self.class_names
