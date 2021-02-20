@@ -127,11 +127,12 @@ def add_histograms(writer, model, step):
 
 
 def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, val_loader, num_epochs, device,
-                       experiment, n_neighbors, writer):
+                       experiment, n_neighbors, writer, verbose=False):
     start_time = time.time()
     time_per_epoch = []
     saved_model_path = None
     train_losses = []
+    train_accuracies = []
     val_losses = []
     val_accuracies = []
     scores_concat = None
@@ -180,9 +181,11 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
         val_losses.append(val_loss)
 
         # Confusion in general
-        val_cm, val_accuracy = get_predictions_with_knn(n_neighbors, train_loader, val_loader, model, device)
-        train_cm, train_accuracy = get_predictions_with_knn(n_neighbors, train_loader, train_loader, model, device)
+        val_cm, val_accuracy, _, _ = get_predictions_with_knn(n_neighbors, train_loader, val_loader, model, device)
+        train_cm, train_accuracy, _, _ = get_predictions_with_knn(n_neighbors, train_loader, train_loader, model,
+                                                                  device)
         val_accuracies.append(val_accuracy)
+        train_accuracies.append(train_accuracy)
         writer.add_scalar('Accuracy/validation', val_accuracy, global_step=step)
         writer.add_scalar('Accuracy/train', train_accuracy, global_step=step)
         train_image = plot_confusion_matrix(
@@ -204,26 +207,28 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
         writer.add_images('ConfusionMatrix/Train', train_image, dataformats='CHW', global_step=step)
         writer.add_images('ConfusionMatrix/Validation', val_image, dataformats='CHW', global_step=step)
 
-        # Timing
-        total_epoch_time = time.time() - epoch_start_time
-        time_per_epoch.append(total_epoch_time)
-        total_time = time.time() - start_time
-        avg_time_per_epoch = sum(time_per_epoch) / len(time_per_epoch)
-        remaining_time = (num_epochs - epoch) * avg_time_per_epoch
+        if verbose:
+            # Timing
+            total_epoch_time = time.time() - epoch_start_time
+            time_per_epoch.append(total_epoch_time)
+            total_time = time.time() - start_time
+            avg_time_per_epoch = sum(time_per_epoch) / len(time_per_epoch)
+            remaining_time = (num_epochs - epoch) * avg_time_per_epoch
 
-        # Debug information
-        print('\n=== Epoch %d/%d ===' % (epoch + 1, num_epochs))
-        print('Train Loss: %.3f' % train_loss)
-        print('Train accuracy: %f' % train_accuracy)
-        print('Validation Loss: %.3f' % val_loss)
-        print('Validation accuracy: %f' % val_accuracy)
-        print('Epoch duration: %s' % time.strftime('%H:%M:%S', time.gmtime(total_epoch_time)))
-        print('Elapsed / Remaining time: %s/%s' % (
-            time.strftime('%H:%M:%S', time.gmtime(total_time)), time.strftime('%H:%M:%S', time.gmtime(remaining_time))))
+            # Debug information
+            print('\n=== Epoch %d/%d ===' % (epoch + 1, num_epochs))
+            print('Train Loss: %.3f' % train_loss)
+            print('Train accuracy: %f' % train_accuracy)
+            print('Validation Loss: %.3f' % val_loss)
+            print('Validation accuracy: %f' % val_accuracy)
+            print('Epoch duration: %s' % time.strftime('%H:%M:%S', time.gmtime(total_epoch_time)))
+            print('Elapsed / Remaining time: %s/%s' % (
+                time.strftime('%H:%M:%S', time.gmtime(total_time)),
+                time.strftime('%H:%M:%S', time.gmtime(remaining_time))))
 
     writer.add_embedding(scores_concat, metadata=[class_names[idx] for idx in labels_concat.int().tolist()],
-                         global_step=step)
-    return min(val_losses), max(val_accuracies), step
+                         tag="train")
+    return min(val_losses), max(val_accuracies), max(train_accuracies), step
 
 
 @torch.no_grad()
@@ -352,19 +357,31 @@ def get_num_correct_predictions(scores, labels):
 
 
 def get_predictions_with_knn(n_neighbors, train_loader, test_loader, model, device):
-    x_train, y_train = get_predictions(train_loader, model, device, apply_softmax=False)
-    x_test, y_test = get_predictions(test_loader, model, device, apply_softmax=False)
-    y_test = y_test.argmax(1)
+    """
+    Receives the train and test loaders and number of neighbors and trains a KNN classifier on the train data, and then
+    predicts on the test loader. Returns the confusion matrix, test accuracy, scores and labes
+    :param n_neighbors: Number of neighbors for the KNN
+    :param train_loader: Train loader
+    :param test_loader: Test Loader
+    :param model: Model to use
+    :param device: Torch device
+    :return: confusion matrix, test accuracy, scores, labels
+    """
+    import numpy as np
+    np.random.seed(0)
+    train_scores, train_labels = get_predictions(train_loader, model, device, apply_softmax=False)
+    test_scores, test_labels = get_predictions(test_loader, model, device, apply_softmax=False)
+    test_labels = test_labels.argmax(1)
     classifier = KNeighborsClassifier(n_neighbors=n_neighbors)
     if device.type == 'cuda':
-        x_train = x_train.cpu()
-        y_train = y_train.cpu()
-        x_test = x_test.cpu()
-        y_test = y_test.cpu()
-    classifier.fit(x_train, y_train.argmax(1))
-    y_pred = classifier.predict(x_test)
+        train_scores = train_scores.cpu()
+        train_labels = train_labels.cpu()
+        test_scores = test_scores.cpu()
+        test_labels = test_labels.cpu()
+    classifier.fit(train_scores, train_labels.argmax(1))
+    test_knn_pred = classifier.predict(test_scores)
     # y_pred = y_pred.argmax(1)
-    test_accuracy = int((y_test == torch.Tensor(y_pred)).sum()) / y_test.shape[0]
-    cm = confusion_matrix(y_test, y_pred)
+    test_accuracy = int((test_labels == torch.Tensor(test_knn_pred)).sum()) / test_labels.shape[0]
+    cm = confusion_matrix(test_labels, test_knn_pred)
 
-    return cm, test_accuracy
+    return cm, test_accuracy, test_scores, test_labels
