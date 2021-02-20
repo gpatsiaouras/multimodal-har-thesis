@@ -1,6 +1,22 @@
 modalities:
-  acc_phone:
-    num_epochs: 400
+  inertial:
+    model:
+      class_name: CNN1D
+      args:
+        - 1284
+      kwargs:
+        out_size: 128
+        norm_out: true
+    num_epochs: 100
     criterion:
       class_name: TripletLossHard
       from_module: losses
+      kwargs:
+        margin: 0.1
+        semi_hard: true
+    optimizer:
+      class_name: RMSprop
+      from_module: torch.optim
+    num_neighbors: 4
+    num_samples: 4
+    batch_size: 32
