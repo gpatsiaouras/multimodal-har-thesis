@@ -1,18 +1,27 @@
 import argparse
 import importlib
 import sys
-
+import random
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 import datasets
 import models
+import numpy
 from datasets import BalancedSampler, AVAILABLE_MODALITIES, get_transforms_from_config
 from tools import train_triplet_loss, get_predictions_with_knn, load_yaml
 from visualizers import plot_confusion_matrix
 
-torch.manual_seed(0)
+# Seed for reproducibility
+seed = 1
+torch.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
+torch.cuda.manual_seed(seed)
+numpy.random.seed(seed)
+random.seed(seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 def train_and_test(args: argparse.Namespace):
@@ -33,25 +42,30 @@ def train_and_test(args: argparse.Namespace):
 
     # Hyper params
     num_neighbors = modality_config.get('num_neighbors') if args.num_neighbors is None else args.num_neighbors
-    learning_rate = modality_config.get('learning_rate') if args.lr is None else args.lr
     batch_size = modality_config.get('batch_size')
     num_epochs = modality_config.get('num_epochs') if args.epochs is None else args.epochs
     shuffle = param_config.get('dataset').get('shuffle')
 
-    # Criterion and optimizer
+    # Criterion, optimizer and scheduler
     model_class_name = modality_config.get('model').get('class_name')
     criterion = modality_config.get('criterion').get('class_name')
     criterion_from = modality_config.get('criterion').get('from_module')
-    criterion_args = modality_config.get('criterion').get('kwargs')
+    criterion_kwargs = modality_config.get('criterion').get('kwargs')
     if args.margin:
-        criterion_args['margin'] = args.margin
+        criterion_kwargs['margin'] = args.margin
     if args.semi_hard is not None:
-        criterion_args['semi_hard'] = args.semi_hard
+        criterion_kwargs['semi_hard'] = args.semi_hard
     optimizer = modality_config.get('optimizer').get('class_name')
     optimizer_from = modality_config.get('optimizer').get('from_module')
+    optimizer_kwargs = modality_config.get('optimizer').get('kwargs')
+    if args.lr:
+        optimizer_kwargs['lr'] = args.lr
+    scheduler_class_name = modality_config.get('scheduler').get('class_name')
+    scheduler_from = modality_config.get('scheduler').get('from_module')
+    scheduler_kwargs = modality_config.get('scheduler').get('kwargs')
 
     # Dataset config
-    SelectedDataset = getattr(datasets, param_config.get('dataset').get('class_name'))
+    selected_dataset = getattr(datasets, param_config.get('dataset').get('class_name'))
     transforms, test_transforms = get_transforms_from_config(
         param_config.get('modalities').get(modality).get('transforms'))
     train_dataset_kwargs = param_config.get('dataset').get('train_kwargs')
@@ -59,19 +73,16 @@ def train_and_test(args: argparse.Namespace):
     test_dataset_kwargs = param_config.get('dataset').get('test_kwargs')
 
     # Load Data
-    train_dataset = SelectedDataset(modality=modality, transform=transforms, **train_dataset_kwargs)
+    train_dataset = selected_dataset(modality=modality, transform=transforms, **train_dataset_kwargs)
     num_actions = len(train_dataset.actions)
     train_loader = DataLoader(dataset=train_dataset, batch_sampler=BalancedSampler(
-        dataset=train_dataset,
+        labels=train_dataset.labels,
         n_classes=num_actions,
-        n_samples=modality_config['num_samples'],
-        sampler=torch.utils.data.sampler.Sampler(train_dataset),
-        batch_size=batch_size,
-        drop_last=False
+        n_samples=modality_config['num_samples']
     ))
-    validation_dataset = SelectedDataset(modality=modality, transform=test_transforms, **validation_dataset_kwargs)
+    validation_dataset = selected_dataset(modality=modality, transform=test_transforms, **validation_dataset_kwargs)
     validation_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=shuffle)
-    test_dataset = SelectedDataset(modality=modality, transform=test_transforms, **test_dataset_kwargs)
+    test_dataset = selected_dataset(modality=modality, transform=test_transforms, **test_dataset_kwargs)
     test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=shuffle)
     class_names = train_dataset.get_class_names()
 
@@ -86,9 +97,12 @@ def train_and_test(args: argparse.Namespace):
         model.load_state_dict(torch.load(args.saved_state))
     model = model.to(device)
 
-    # Loss and optimizer
-    criterion = getattr(importlib.import_module(criterion_from), criterion)(**criterion_args)
-    optimizer = getattr(importlib.import_module(optimizer_from), optimizer)(model.parameters(), learning_rate)
+    # Loss, optimizer and scheduler
+    criterion = getattr(importlib.import_module(criterion_from), criterion)(**criterion_kwargs)
+    optimizer = getattr(importlib.import_module(optimizer_from), optimizer)(model.parameters(), **optimizer_kwargs)
+    scheduler = None
+    if not args.no_scheduler:
+        scheduler = getattr(importlib.import_module(scheduler_from), scheduler_class_name)(**scheduler_kwargs)
 
     # Training procedure:
     # 1. Instantiate tensorboard writer
@@ -99,27 +113,30 @@ def train_and_test(args: argparse.Namespace):
             sys.exit(0)
         elif args.experiment == 'auto':
             experiment = '%s_%s_TL_A%s_M%s_LR%s_%s_%sep' % (
-                model.name, modality, str(num_actions), str(criterion_args['margin']), str(learning_rate),
-                'semi_hard' if criterion_args['semi_hard'] else 'hard', num_epochs)
+                model.name, modality, str(num_actions), str(criterion_kwargs['margin']), str(optimizer_kwargs['lr']),
+                'semi_hard' if criterion_kwargs['semi_hard'] else 'hard', num_epochs)
         else:
             experiment = args.experiment
         if args.verbose:
             print('Experiment:  %s' % experiment)
         writer = SummaryWriter('../logs/' + experiment)
 
-        min_val_loss, max_val_acc, max_train_acc, last_step = train_triplet_loss(model=model,
-                                                                                 criterion=criterion,
-                                                                                 optimizer=optimizer,
-                                                                                 class_names=class_names,
-                                                                                 train_loader=train_loader,
-                                                                                 val_loader=validation_loader,
-                                                                                 num_epochs=num_epochs,
-                                                                                 device=device,
-                                                                                 experiment=experiment,
-                                                                                 writer=writer,
-                                                                                 n_neighbors=num_neighbors,
-                                                                                 verbose=args.verbose
-                                                                                 )
+        train_losses, val_losses, val_accs, train_accs, last_step = train_triplet_loss(model=model,
+                                                                                       criterion=criterion,
+                                                                                       optimizer=optimizer,
+                                                                                       scheduler=scheduler,
+                                                                                       class_names=class_names,
+                                                                                       train_loader=train_loader,
+                                                                                       val_loader=validation_loader,
+                                                                                       num_epochs=num_epochs,
+                                                                                       device=device,
+                                                                                       experiment=experiment,
+                                                                                       writer=writer,
+                                                                                       n_neighbors=num_neighbors,
+                                                                                       verbose=args.verbose
+                                                                                       )
+        max_val_acc = max(val_accs) if len(val_accs) > 0 else -1
+        max_train_acc = max(train_accs) if len(train_accs) > 0 else -1
 
     cm, test_accuracy, test_scores, test_labels = get_predictions_with_knn(
         n_neighbors=num_neighbors,
@@ -129,8 +146,7 @@ def train_and_test(args: argparse.Namespace):
         device=device
     )
 
-    if args.verbose:
-        print('Test accuracy: %f' % test_accuracy)
+    print('Test accuracy: %f' % test_accuracy)
     cm_image = plot_confusion_matrix(
         cm=cm,
         title='Confusion Matrix- Test Loader',
@@ -140,32 +156,44 @@ def train_and_test(args: argparse.Namespace):
         classes=test_dataset.get_class_names()
     )
     if not args.test:
-        writer.add_hparams({'learning_rate': learning_rate, 'margin': criterion_args['margin']},
-                           {'hparam/val_acc': max_val_acc, 'hparam/test_acc': test_accuracy,
-                            'hparam/train_acc': max_train_acc},
-                           run_name='hparams')
+        writer.add_hparams({
+            'learning_rate': optimizer_kwargs['lr'],
+            'margin': criterion_kwargs['margin'],
+            'semi_hard': criterion_kwargs['semi_hard'],
+            'out_size': model_kwargs['out_size']
+        }, {
+            'hparam/val_acc': max_val_acc,
+            'hparam/test_acc': test_accuracy,
+            'hparam/train_acc': max_train_acc
+        }, run_name='hparams')
         writer.add_images('ConfusionMatrix/Test', cm_image, dataformats='CHW', global_step=last_step)
-        writer.add_embedding(test_scores, metadata=[class_names[idx] for idx in test_labels.int().tolist()], tag="test")
+        writer.add_embedding(test_scores, metadata=[class_names[idx] for idx in test_labels.int().tolist()],
+                             tag="test (" + str(test_accuracy) + "%)")
         writer.flush()
         writer.close()
 
-    return max_train_acc, max_val_acc, test_accuracy
+        return max_train_acc, max_val_acc, test_accuracy
+    return None
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--modality', choices=AVAILABLE_MODALITIES, default='inertial')
-    parser.add_argument('--gpu', type=int, default=0, help='Only applicable when cuda gpu is available')
+    parser.add_argument('--gpu', type=int, default=2, help='Only applicable when cuda gpu is available')
     parser.add_argument('--param_file', type=str, default='parameters/utd_mhad/triplet_loss.yaml')
     parser.add_argument('--epochs', type=int, default=None)
     parser.add_argument('--num_neighbors', type=int, default=None, help='Number of neighbors for the KNN')
     parser.add_argument('--experiment', type=str, default=None, help='use auto for an autogenerated experiment name')
     parser.add_argument('--lr', type=float, default=None)
     parser.add_argument('--margin', type=float, default=None)
-    parser.add_argument('--semi_hard', type=bool, default=None)
+    parser.add_argument('--out_size', type=int, default=None)
+    parser.add_argument('--semi_hard', dest='semi_hard', action='store_true')
+    parser.add_argument('--hard', dest='semi_hard', action='store_false')
     parser.add_argument('--test', action='store_true', help='Use this argument to test instead of train')
     parser.add_argument('--saved_state', type=str, default=None, help='Specify saved model when using --test')
     parser.add_argument('--verbose', action='store_true', help='Be more verbose')
+    parser.add_argument('--no_scheduler', action='store_true', help='Don\'t use a scheduler')
+    parser.set_defaults(no_scheduler=False, semi_hard=None)
     args = parser.parse_args()
 
     train_and_test(args)

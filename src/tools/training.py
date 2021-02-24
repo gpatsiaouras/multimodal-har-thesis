@@ -127,7 +127,7 @@ def add_histograms(writer, model, step):
 
 
 def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, val_loader, num_epochs, device,
-                       experiment, n_neighbors, writer, verbose=False):
+                       experiment, n_neighbors, writer, scheduler=None, verbose=False):
     start_time = time.time()
     time_per_epoch = []
     saved_model_path = None
@@ -162,6 +162,7 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
             loss.backward()
             optimizer.step()
 
+            train_losses.append(loss.item())
             # Tensorboard
             writer.add_scalar('Loss/train', loss.item(), global_step=step)
             add_histograms(writer, model, step)
@@ -179,7 +180,8 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
                 os.remove(saved_model_path)
             saved_model_path = save_model(model, '%s.pt' % experiment)
         val_losses.append(val_loss)
-
+        if scheduler:
+            scheduler.step(val_loss)
         # Confusion in general
         val_cm, val_accuracy, _, _ = get_predictions_with_knn(n_neighbors, train_loader, val_loader, model, device)
         train_cm, train_accuracy, _, _ = get_predictions_with_knn(n_neighbors, train_loader, train_loader, model,
@@ -227,8 +229,8 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
                 time.strftime('%H:%M:%S', time.gmtime(remaining_time))))
 
     writer.add_embedding(scores_concat, metadata=[class_names[idx] for idx in labels_concat.int().tolist()],
-                         tag="train")
-    return min(val_losses), max(val_accuracies), max(train_accuracies), step
+                         tag="train (" + str(train_accuracy) + "%)")
+    return train_losses, val_losses, val_accuracies, train_accuracies, step
 
 
 @torch.no_grad()
@@ -367,8 +369,6 @@ def get_predictions_with_knn(n_neighbors, train_loader, test_loader, model, devi
     :param device: Torch device
     :return: confusion matrix, test accuracy, scores, labels
     """
-    import numpy as np
-    np.random.seed(0)
     train_scores, train_labels = get_predictions(train_loader, model, device, apply_softmax=False)
     test_scores, test_labels = get_predictions(test_loader, model, device, apply_softmax=False)
     test_labels = test_labels.argmax(1)

@@ -1,10 +1,6 @@
-import random
-
 import numpy as np
 from scipy import signal
 from scipy.spatial.transform import Rotation as R
-
-random.seed(0)
 
 
 class Resize:
@@ -81,12 +77,10 @@ class RandomEulerRotation:
     """
 
     def __init__(self, start=-5, end=5, step=5):
-        self.start = start
-        self.end = end
-        self.step = step
+        self.choices_list = list(range(start, end + 1, step))
 
     def __call__(self, x):
-        rotate_to = random.randrange(self.start, self.end + 1, self.step)
+        rotate_to = np.random.choice(self.choices_list)
         rotation = R.from_euler('xy', (rotate_to, rotate_to), degrees=True)
         for frame_idx in range(x.shape[0]):
             x[frame_idx, :, :] = rotation.apply(x[frame_idx, :, :])

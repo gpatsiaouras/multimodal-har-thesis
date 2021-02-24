@@ -7,7 +7,7 @@ modalities:
         args:
           - [ -0.09214367,-0.29444627, 2.87122181 ]
           - [ 0.13432376, 0.46162172, 0.12374677 ]
-      - class_name: Sampler
+      - class_name: CropToSize
         from_module: transforms
         in_test: true
         args:
@@ -17,6 +17,13 @@ modalities:
         in_test: true
         args:
           - [ 0, 5, 7, 9, 11, 13, 15, 17, 19 ]
+      - class_name: RandomEulerRotation
+        from_module: transforms
+        in_test: false
+        args:
+          - -10
+          - 10
+          - 10
       - class_name: Flatten
         from_module: transforms
         in_test: true

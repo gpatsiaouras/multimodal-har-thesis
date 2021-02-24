@@ -35,8 +35,6 @@ class Jittering:
 
     def apply(self, x, jitter_factor):
         jittered_x = np.zeros(x.shape)
-        # Seed random
-        np.random.seed(0)
         for i in range(x.shape[1]):
             data = x[:, i]
             data_unique = np.unique(np.sort(data))

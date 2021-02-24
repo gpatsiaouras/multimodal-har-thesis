@@ -21,10 +21,9 @@ modalities:
         from_module: transforms
         in_test: true
         args: [ ]
-    learning_rate: 0.0001
-    num_epochs: 100
-    num_neighbors: 4
-    num_samples: 4
+    num_epochs: 200
+    num_neighbors: 21
+    num_samples: 8
     batch_size: 32
     model:
       class_name: CNN1D
@@ -42,17 +41,25 @@ modalities:
     optimizer:
       class_name: RMSprop
       from_module: torch.optim
+      kwargs:
+        lr: 0.0001
+    scheduler:
+      class_name: ReduceLROnPlateau
+      from_module: torch.optim.lr_scheduler
+      kwargs:
+        patience: 10
+        verbose: true
   sdfdi:
-    learning_rate: 0.0001
-    num_epochs: 100
-    num_neighbors: 20
+    num_epochs: 200
+    num_neighbors: 21
     num_samples: 4
     batch_size: 32
     model:
       class_name: MobileNetV2
-      args:
-        - 128
-      kwargs: {}
+      args: [ ]
+      kwargs:
+        out_size: 512
+        norm_out: true
     criterion:
       class_name: TripletLossHard
       from_module: losses
@@ -62,6 +69,14 @@ modalities:
     optimizer:
       class_name: RMSprop
       from_module: torch.optim
+      kwargs:
+        lr: 0.0001
+    scheduler:
+      class_name: ReduceLROnPlateau
+      from_module: torch.optim.lr_scheduler
+      kwargs:
+        patience: 10
+        verbose: true
   skeleton:
     transforms:
       - class_name: Normalize
@@ -82,7 +97,7 @@ modalities:
           - [ 0, 5, 7, 9, 11, 13, 15, 17, 19 ]
       - class_name: RandomEulerRotation
         from_module: transforms
-        in_test: true
+        in_test: false
         args:
           - -10
           - 10
@@ -91,8 +106,7 @@ modalities:
         from_module: transforms
         in_test: true
         args: [ ]
-    learning_rate: 0.0001
-    num_epochs: 100
+    num_epochs: 200
     num_neighbors: 21
     num_samples: 4
     batch_size: 32
@@ -112,3 +126,11 @@ modalities:
     optimizer:
       class_name: RMSprop
       from_module: torch.optim
+      kwargs:
+        lr: 0.0001
+    scheduler:
+      class_name: ReduceLROnPlateau
+      from_module: torch.optim.lr_scheduler
+      kwargs:
+        patience: 10
+        verbose: true
