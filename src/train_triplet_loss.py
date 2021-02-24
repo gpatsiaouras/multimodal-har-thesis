@@ -102,11 +102,16 @@ def train_and_test(args: argparse.Namespace):
     optimizer = getattr(importlib.import_module(optimizer_from), optimizer)(model.parameters(), **optimizer_kwargs)
     scheduler = None
     if not args.no_scheduler:
-        scheduler = getattr(importlib.import_module(scheduler_from), scheduler_class_name)(**scheduler_kwargs)
+        scheduler = getattr(importlib.import_module(scheduler_from), scheduler_class_name)(optimizer,
+                                                                                           **scheduler_kwargs)
 
     # Training procedure:
     # 1. Instantiate tensorboard writer
     # 2. Run training with triplet loss
+    max_val_acc = -1
+    max_train_acc = -1
+    min_train_loss = -1
+    min_val_loss = -1
     if not args.test:
         if args.experiment is None:
             print('Specify an experiment name by using --experiment argument')
@@ -135,8 +140,10 @@ def train_and_test(args: argparse.Namespace):
                                                                                        n_neighbors=num_neighbors,
                                                                                        verbose=args.verbose
                                                                                        )
-        max_val_acc = max(val_accs) if len(val_accs) > 0 else -1
-        max_train_acc = max(train_accs) if len(train_accs) > 0 else -1
+        max_val_acc = max(val_accs) if len(val_accs) > 0 else max_val_acc
+        max_train_acc = max(train_accs) if len(train_accs) > 0 else max_train_acc
+        min_train_loss = max(train_losses) if len(train_losses) > 0 else min_train_loss
+        min_val_loss = max(val_losses) if len(val_losses) > 0 else min_val_loss
 
     cm, test_accuracy, test_scores, test_labels = get_predictions_with_knn(
         n_neighbors=num_neighbors,
@@ -146,7 +153,6 @@ def train_and_test(args: argparse.Namespace):
         device=device
     )
 
-    print('Test accuracy: %f' % test_accuracy)
     cm_image = plot_confusion_matrix(
         cm=cm,
         title='Confusion Matrix- Test Loader',
@@ -168,12 +174,13 @@ def train_and_test(args: argparse.Namespace):
         }, run_name='hparams')
         writer.add_images('ConfusionMatrix/Test', cm_image, dataformats='CHW', global_step=last_step)
         writer.add_embedding(test_scores, metadata=[class_names[idx] for idx in test_labels.int().tolist()],
-                             tag="test (" + str(test_accuracy) + "%)")
+                             tag="test (%f%%)" % test_accuracy)
         writer.flush()
         writer.close()
 
-        return max_train_acc, max_val_acc, test_accuracy
-    return None
+        return test_accuracy, max_train_acc, max_val_acc, min_train_loss, min_val_loss
+
+    return test_accuracy
 
 
 if __name__ == '__main__':
@@ -196,4 +203,6 @@ if __name__ == '__main__':
     parser.set_defaults(no_scheduler=False, semi_hard=None)
     args = parser.parse_args()
 
-    train_and_test(args)
+    test_accuracy, _, _, _, _ = train_and_test(args)
+
+    print('Test accuracy: %f' % test_accuracy)

@@ -175,9 +175,13 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
         train_loss = train_running_loss / len(train_loader)
         val_loss = get_loss(val_loader, model, device, criterion)
         writer.add_scalar('Loss/validation', val_loss, global_step=step)
-        if len(val_losses) > 0 and val_loss < min(val_losses):
-            if saved_model_path is not None:
+        if len(val_losses) > 0:
+            # After the first save only for better result in validation
+            if val_loss < min(val_losses):
                 os.remove(saved_model_path)
+                saved_model_path = save_model(model, '%s.pt' % experiment)
+        else:
+            # Save the model the first time without checking that the validation was reduced.
             saved_model_path = save_model(model, '%s.pt' % experiment)
         val_losses.append(val_loss)
         if scheduler:
@@ -229,7 +233,7 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
                 time.strftime('%H:%M:%S', time.gmtime(remaining_time))))
 
     writer.add_embedding(scores_concat, metadata=[class_names[idx] for idx in labels_concat.int().tolist()],
-                         tag="train (" + str(train_accuracy) + "%)")
+                         tag="train (%f%%)" % train_accuracy)
     return train_losses, val_losses, val_accuracies, train_accuracies, step
 
 

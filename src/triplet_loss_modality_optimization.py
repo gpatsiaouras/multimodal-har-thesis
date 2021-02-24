@@ -1,6 +1,7 @@
+import os
 import argparse
 import itertools
-import json
+import csv
 import time
 from argparse import Namespace
 
@@ -32,6 +33,7 @@ def get_permutations(dict_a, dict_b):
 
 
 def run():
+    experiment_time = time.strftime("%Y%m%d_%H%M", time.localtime())
     args = {
         'margin': None,
         'lr': None,
@@ -42,14 +44,14 @@ def run():
         'num_neighbors': None,
         'epochs': None,
         'semi_hard': parser_args.semi_hard,
-        'out_size': None,
-        'verbose': False
+        'out_size': 512,
+        'verbose': False,
+        'no_scheduler': True
     }
 
     args_to_check = {
-        'lr': [1e-5, 1e-6, 1e-7, 1e-8],
-        'margin': [0.1, 0.2, 0.3, 0.4, 0.5],
-        'out_size': [32, 512]
+        'lr': [1e-5, 1e-8],
+        'margin': [0.1, 0.3, 0.5, 0.9],
     }
     print_table(args_to_check)
 
@@ -62,7 +64,9 @@ def run():
     current_training_counter = 0
     for single_args in permutations_dicts:
         training_start_time = time.time()
-        single_args['experiment'] = 'exp_m%s_lr%s_os%s_sm%s' % (
+        single_args['experiment'] = '%s_%s/exp_m%s_lr%s_os%s_sm%s' % (
+            experiment_time,
+            args['modality'],
             str(single_args['margin']),
             str(single_args['lr']),
             str(single_args['out_size']),
@@ -71,14 +75,19 @@ def run():
         single_args = Namespace(**single_args)
 
         # Start training
-        max_train_acc, max_val_acc, test_acc = train_and_test(single_args)
+        test_acc, max_train_acc, max_val_acc, min_train_loss, min_val_loss = train_and_test(single_args)
 
         # Collect results
         results.append({
-            'config': vars(single_args),
+            'lr': single_args.lr,
+            'margin': single_args.lr,
+            'out_size': single_args.out_size,
+            'semi_hard': single_args.semi_hard,
             'train_acc': max_train_acc,
             'val_acc': max_val_acc,
             'test_acc': test_acc,
+            'min_train_loss': min_train_loss,
+            'min_val_loss': min_val_loss
         })
 
         current_training_counter += 1
@@ -95,15 +104,27 @@ def run():
         print('Elapsed / Remaining time: %s/%s' % (
             time.strftime('%H:%M:%S', time.gmtime(total_time)), time.strftime('%H:%M:%S', time.gmtime(remaining_time))))
 
-    with open('experiment_results_sm%s.json' % str(parser_args.semi_hard), 'w') as outfile:
-        json.dump({
-            'results': results,
-            'stats': {
-                'start_time': time.ctime(start_time),
-                'end_time': time.ctime(time.time()),
-                'total_duration': time.strftime('%H:%M:%S', time.gmtime(time.time() - start_time))
-            }
-        }, outfile)
+    # Write results in an experiments folder
+    experiments_out_folder = os.path.join(os.path.dirname(__file__), '..', 'experiment_results')
+    if not os.path.isdir(experiments_out_folder):
+        os.mkdir(experiments_out_folder)
+    experiment_out_file = os.path.join(experiments_out_folder, '%s_%s.csv' % (experiment_time, args['modality']))
+    with open(experiment_out_file, 'w') as outfile:
+        fieldnames = [
+            'lr',
+            'margin',
+            'out_size',
+            'semi_hard',
+            'train_acc',
+            'val_acc',
+            'test_acc',
+            'min_train_loss',
+            'min_val_loss',
+        ]
+        csv_writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+        csv_writer.writeheader()
+        for result in results:
+            csv_writer.writerow(result)
 
 
 if __name__ == '__main__':

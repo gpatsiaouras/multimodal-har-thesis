@@ -17,6 +17,7 @@ no-commit/
 out/
 plots/
 saved_models/
+experiment_results/
 
 # Tensorboard
 logs/

@@ -16,9 +16,14 @@ def save_model(model, filename):
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
 
-    # construct a name for the saved_model
-    datetime = time.strftime("%Y%m%d_%H%M", time.localtime())
-    filename = '_'.join([datetime, model.name, filename])
+    # Check if filename has directory, and then assure that it exists
+    if os.path.dirname(filename) != '':
+        if not os.path.isdir(os.path.join(save_dir, os.path.dirname(filename))):
+            os.mkdir(os.path.join(save_dir, os.path.dirname(filename)))
+    else:
+        # construct a name for the saved_model
+        datetime = time.strftime("%Y%m%d_%H%M", time.localtime())
+        filename = '_'.join([datetime, model.name, filename])
 
     # Save the model in the saved_models/ directory
     path_to_save = os.path.join(save_dir, filename)
