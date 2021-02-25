@@ -88,7 +88,8 @@ def train_and_test(args: argparse.Namespace):
 
     # Initiate the model
     model_kwargs = modality_config.get('model').get('kwargs')
-    model_kwargs['out_size'] = model_kwargs['out_size'] if args.out_size is None else args.out_size
+    if args.out_size is not None:
+        model_kwargs['out_size'] = args.out_size
     model = getattr(models, model_class_name)(
         *modality_config.get('model').get('args'),
         **model_kwargs
@@ -145,7 +146,7 @@ def train_and_test(args: argparse.Namespace):
         min_train_loss = max(train_losses) if len(train_losses) > 0 else min_train_loss
         min_val_loss = max(val_losses) if len(val_losses) > 0 else min_val_loss
 
-    cm, test_accuracy, test_scores, test_labels = get_predictions_with_knn(
+    cm, test_acc, test_scores, test_labels = get_predictions_with_knn(
         n_neighbors=num_neighbors,
         train_loader=train_loader,
         test_loader=test_loader,
@@ -169,18 +170,28 @@ def train_and_test(args: argparse.Namespace):
             'out_size': model_kwargs['out_size']
         }, {
             'hparam/val_acc': max_val_acc,
-            'hparam/test_acc': test_accuracy,
+            'hparam/test_acc': test_acc,
             'hparam/train_acc': max_train_acc
         }, run_name='hparams')
         writer.add_images('ConfusionMatrix/Test', cm_image, dataformats='CHW', global_step=last_step)
         writer.add_embedding(test_scores, metadata=[class_names[idx] for idx in test_labels.int().tolist()],
-                             tag="test (%f%%)" % test_accuracy)
+                             tag="test (%f%%)" % test_acc)
         writer.flush()
         writer.close()
 
-        return test_accuracy, max_train_acc, max_val_acc, min_train_loss, min_val_loss
+        return {
+            'lr': optimizer_kwargs['lr'],
+            'margin': criterion_kwargs['margin'],
+            'semi_hard': criterion_kwargs['semi_hard'],
+            'out_size': model_kwargs['out_size'],
+            'test_acc': test_acc,
+            'max_train_acc': max_train_acc,
+            'max_val_acc': max_val_acc,
+            'min_train_loss': min_train_loss,
+            'min_val_loss': min_val_loss
+        }
 
-    return test_accuracy
+    return {'test_acc': test_acc}
 
 
 if __name__ == '__main__':
@@ -203,6 +214,6 @@ if __name__ == '__main__':
     parser.set_defaults(no_scheduler=False, semi_hard=None)
     args = parser.parse_args()
 
-    test_accuracy, _, _, _, _ = train_and_test(args)
+    training_testing_results = train_and_test(args)
 
-    print('Test accuracy: %f' % test_accuracy)
+    print('Test accuracy: %f' % training_testing_results['test_acc'])

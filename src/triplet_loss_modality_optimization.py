@@ -2,12 +2,26 @@ import os
 import argparse
 import itertools
 import csv
+import random
 import time
 from argparse import Namespace
+
+import numpy
+import torch
 
 from datasets import AVAILABLE_MODALITIES
 from train_triplet_loss import train_and_test
 from visualizers import print_table
+
+# Seed for reproducibility
+seed = 1
+torch.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
+torch.cuda.manual_seed(seed)
+numpy.random.seed(seed)
+random.seed(seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 def get_permutations(dict_a, dict_b):
@@ -44,13 +58,13 @@ def run():
         'num_neighbors': None,
         'epochs': None,
         'semi_hard': parser_args.semi_hard,
-        'out_size': 512,
-        'verbose': False,
+        'out_size': None,
+        'verbose': parser_args.verbose,
         'no_scheduler': True
     }
 
     args_to_check = {
-        'lr': [1e-5, 1e-8],
+        'lr': [1e-5, 1e-6, 1e-8],
         'margin': [0.1, 0.3, 0.5, 0.9],
     }
     print_table(args_to_check)
@@ -75,19 +89,19 @@ def run():
         single_args = Namespace(**single_args)
 
         # Start training
-        test_acc, max_train_acc, max_val_acc, min_train_loss, min_val_loss = train_and_test(single_args)
+        training_testing_results = train_and_test(single_args)
 
         # Collect results
         results.append({
-            'lr': single_args.lr,
-            'margin': single_args.lr,
-            'out_size': single_args.out_size,
-            'semi_hard': single_args.semi_hard,
-            'train_acc': max_train_acc,
-            'val_acc': max_val_acc,
-            'test_acc': test_acc,
-            'min_train_loss': min_train_loss,
-            'min_val_loss': min_val_loss
+            'lr': training_testing_results['lr'],
+            'margin': training_testing_results['margin'],
+            'out_size': training_testing_results['out_size'],
+            'semi_hard': training_testing_results['semi_hard'],
+            'train_acc': training_testing_results['max_train_acc'],
+            'val_acc': training_testing_results['max_val_acc'],
+            'test_acc': training_testing_results['test_acc'],
+            'min_train_loss': training_testing_results['min_train_loss'],
+            'min_val_loss': training_testing_results['min_val_loss']
         })
 
         current_training_counter += 1
@@ -130,11 +144,13 @@ def run():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--modality', choices=AVAILABLE_MODALITIES, default='inertial')
-    parser.add_argument('--gpu', type=int, default=0, help='Only applicable when cuda gpu is available')
-    parser.add_argument('--param_file', type=str, default='parameters/utd_mhad/triplet_loss.yaml')
+    parser.add_argument('--gpu', type=int, default=2, help='Only applicable when cuda gpu is available')
+    parser.add_argument('--param_file', type=str, default='parameters/utd_mhad/triplet_loss.yaml',
+                        help='Defaults to parameters/utd_mhad/triplet_loss.yaml')
     parser.add_argument('--semi_hard', dest='semi_hard', action='store_true')
     parser.add_argument('--hard', dest='semi_hard', action='store_false')
-    parser.set_defaults(semi_hard=True)
+    parser.add_argument('--verbose', action='store_true', help='Print stats for each training')
+    parser.set_defaults(semi_hard=True, verbose=False)
     parser_args = parser.parse_args()
 
     run()

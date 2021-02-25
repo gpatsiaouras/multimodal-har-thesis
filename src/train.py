@@ -1,7 +1,9 @@
 import argparse
 import importlib
+import random
 import time
 
+import numpy
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -12,7 +14,15 @@ from datasets import get_transforms_from_config, AVAILABLE_MODALITIES
 from tools import load_yaml, train, get_confusion_matrix, get_accuracy
 from visualizers import print_table, plot_confusion_matrix
 
-torch.manual_seed(0)
+# Seed for reproducibility
+seed = 1
+torch.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
+torch.cuda.manual_seed(seed)
+numpy.random.seed(seed)
+random.seed(seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--modality', choices=AVAILABLE_MODALITIES, default='inertial')

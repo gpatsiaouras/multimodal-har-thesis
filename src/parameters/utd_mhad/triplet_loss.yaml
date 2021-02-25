@@ -21,16 +21,16 @@ modalities:
         from_module: transforms
         in_test: true
         args: [ ]
-    num_epochs: 200
+    num_epochs: 400
     num_neighbors: 21
-    num_samples: 8
+    num_samples: 4
     batch_size: 32
     model:
       class_name: CNN1D
       args:
         - 642
       kwargs:
-        out_size: 128
+        out_size: 512
         norm_out: true
     criterion:
       class_name: TripletLossHard
@@ -106,7 +106,7 @@ modalities:
         from_module: transforms
         in_test: true
         args: [ ]
-    num_epochs: 200
+    num_epochs: 400
     num_neighbors: 21
     num_samples: 4
     batch_size: 32
@@ -115,7 +115,7 @@ modalities:
       args:
         - 1107
       kwargs:
-        out_size: 128
+        out_size: 512
         norm_out: true
     criterion:
       class_name: TripletLossHard
