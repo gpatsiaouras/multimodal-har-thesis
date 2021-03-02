@@ -32,7 +32,6 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
     train_losses = []
     validation_losses = []
     saved_model_path = None
-    step = 0
 
     # Train Network
     for epoch in range(num_epochs):
@@ -47,7 +46,7 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
             model.train()
             # Get data to cuda if possible
             data = data.float().to(device)
-            labels = labels.to(device)
+            labels = labels.long().to(device)
 
             # forward
             scores = model(data)
@@ -67,7 +66,6 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
             optimizer.step()
 
             train_running_loss += loss.item()
-            step += 1
 
         ##########
         # Losses #
@@ -96,16 +94,16 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
 
         # Tensorboard
         if writer:
-            writer.add_scalar('Loss/train', train_loss, global_step=step)
-            writer.add_scalar('Loss/validation', validation_loss, global_step=step)
-            writer.add_scalar('Accuracy/train', train_acc, global_step=step)
-            writer.add_scalar('Accuracy/validation', validation_acc, global_step=step)
+            writer.add_scalar('Loss/train', train_loss, global_step=epoch)
+            writer.add_scalar('Loss/validation', validation_loss, global_step=epoch)
+            writer.add_scalar('Accuracy/train', train_acc, global_step=epoch)
+            writer.add_scalar('Accuracy/validation', validation_acc, global_step=epoch)
 
         # Debug information
         print_epoch_info(start_time, epoch_start_time, time_per_epoch, epoch, num_epochs, train_loss, validation_loss,
                          train_acc, validation_acc)
 
-    return train_accuracies, validation_accuracies, train_losses, validation_losses, step
+    return train_accuracies, validation_accuracies, train_losses, validation_losses
 
 
 def add_histograms(writer, model, step):
@@ -137,7 +135,6 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
     val_accuracies = []
     scores_concat = None
     labels_concat = None
-    step = 0
 
     for epoch in range(num_epochs):
         scores_concat = torch.tensor([], device=device)
@@ -148,7 +145,10 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
             # Turn inference mode off (in case)
             model.train()
             # Get data to cuda if possible
-            data = data.float().to(device)
+            if isinstance(data, list):
+                data = tuple(d.float().to(device) for d in data)
+            else:
+                data = data.float().to(device)
             targets = targets.to(device)
 
             # Train scores
@@ -163,18 +163,18 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
             optimizer.step()
 
             train_losses.append(loss.item())
-            # Tensorboard
-            writer.add_scalar('Loss/train', loss.item(), global_step=step)
-            add_histograms(writer, model, step)
 
             scores_concat = torch.cat((scores_concat, scores), dim=0)
             labels_concat = torch.cat((labels_concat, labels), dim=0)
-            step += 1
 
+        add_histograms(writer, model, epoch)
+        sum_distance_embeddings = torch.sum(torch.cdist(scores_concat, scores_concat))
+        writer.add_scalar('Embeddings/distances', sum_distance_embeddings, global_step=epoch)
         # Calculations
         train_loss = train_running_loss / len(train_loader)
+        writer.add_scalar('Loss/train', train_loss, global_step=epoch)
         val_loss = get_loss(val_loader, model, device, criterion)
-        writer.add_scalar('Loss/validation', val_loss, global_step=step)
+        writer.add_scalar('Loss/validation', val_loss, global_step=epoch)
         if len(val_losses) > 0:
             # After the first save only for better result in validation
             if val_loss < min(val_losses):
@@ -192,8 +192,8 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
                                                                   device)
         val_accuracies.append(val_accuracy)
         train_accuracies.append(train_accuracy)
-        writer.add_scalar('Accuracy/validation', val_accuracy, global_step=step)
-        writer.add_scalar('Accuracy/train', train_accuracy, global_step=step)
+        writer.add_scalar('Accuracy/validation', val_accuracy, global_step=epoch)
+        writer.add_scalar('Accuracy/train', train_accuracy, global_step=epoch)
         train_image = plot_confusion_matrix(
             cm=train_cm,
             title='Confusion Matrix - Percentage % - Train Loader',
@@ -210,8 +210,8 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
             show_figure=False,
             classes=class_names
         )
-        writer.add_images('ConfusionMatrix/Train', train_image, dataformats='CHW', global_step=step)
-        writer.add_images('ConfusionMatrix/Validation', val_image, dataformats='CHW', global_step=step)
+        writer.add_images('ConfusionMatrix/Train', train_image, dataformats='CHW', global_step=epoch)
+        writer.add_images('ConfusionMatrix/Validation', val_image, dataformats='CHW', global_step=epoch)
 
         if verbose:
             # Timing
@@ -222,19 +222,12 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
             remaining_time = (num_epochs - epoch) * avg_time_per_epoch
 
             # Debug information
-            print('\n=== Epoch %d/%d ===' % (epoch + 1, num_epochs))
-            print('Train Loss: %.3f' % train_loss)
-            print('Train accuracy: %f' % train_accuracy)
-            print('Validation Loss: %.3f' % val_loss)
-            print('Validation accuracy: %f' % val_accuracy)
-            print('Epoch duration: %s' % time.strftime('%H:%M:%S', time.gmtime(total_epoch_time)))
-            print('Elapsed / Remaining time: %s/%s' % (
-                time.strftime('%H:%M:%S', time.gmtime(total_time)),
-                time.strftime('%H:%M:%S', time.gmtime(remaining_time))))
+            print_epoch_info(start_time, epoch_start_time, time_per_epoch, epoch, num_epochs, train_loss, val_loss,
+                             train_accuracy, val_accuracy)
 
     writer.add_embedding(scores_concat, metadata=[class_names[idx] for idx in labels_concat.int().tolist()],
                          tag="train (%f%%)" % train_accuracy)
-    return train_losses, val_losses, val_accuracies, train_accuracies, step
+    return train_losses, val_losses, val_accuracies, train_accuracies
 
 
 @torch.no_grad()
@@ -338,8 +331,11 @@ def get_predictions(data_loader, model, device, apply_softmax=False):
     all_labels = torch.tensor([], device=device)
 
     for (data, labels) in data_loader:
-        data = data.float().to(device)
-        labels = labels.to(device=device)
+        if isinstance(data, list):
+            data = tuple(d.float().to(device) for d in data)
+        else:
+            data = data.float().to(device)
+        labels = labels.long().to(device=device)
 
         out = model(data)
         if apply_softmax:

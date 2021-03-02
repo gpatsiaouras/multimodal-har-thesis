@@ -32,6 +32,7 @@ parser.add_argument('--epochs', type=int, default=None)
 parser.add_argument('--experiment', type=str, default=None)
 parser.add_argument('--bs', type=int, default=None)
 parser.add_argument('--lr', type=float, default=None)
+parser.add_argument('--dr', type=float, default=None, help='Dropout rate')
 args = parser.parse_args()
 
 # Select device
@@ -51,6 +52,7 @@ SelectedDataset = getattr(datasets, param_config.get('dataset').get('class_name'
 transforms, test_transforms = get_transforms_from_config(modality_config.get('transforms'))
 learning_rate = modality_config.get('learning_rate') if args.lr is None else args.lr
 batch_size = modality_config.get('batch_size') if args.bs is None else args.bs
+dropout_rate = modality_config.get('dropout_rate') if args.dr is None else args.dr
 num_epochs = modality_config.get('num_epochs') if args.epochs is None else args.epochs
 shuffle = param_config.get('dataset').get('shuffle')
 model_class_name = modality_config.get('model').get('class_name')
@@ -71,6 +73,9 @@ test_dataset = SelectedDataset(modality=modality, transform=test_transforms, **t
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=shuffle)
 
 # Initiate the model
+model_kwargs = modality_config.get('model').get('kwargs')
+if args.dr is not None:
+    model_kwargs['dropout_rate'] = args.dr
 model = getattr(models, model_class_name)(
     *modality_config.get('model').get('args'),
     **modality_config.get('model').get('kwargs')
@@ -92,7 +97,7 @@ writer_name = '../logs/%s' % experiment
 writer = SummaryWriter(writer_name)
 
 # Start training
-train_accs, validation_accs, train_losses, validation_losses, last_step = train(
+train_accs, validation_accs, train_losses, validation_losses = train(
     model=model,
     criterion=criterion,
     optimizer=optimizer,
@@ -130,9 +135,9 @@ cm_image_test = plot_confusion_matrix(
 )
 
 # Add confusion matrices for each dataset, mark it for the last step which is num_epochs - 1
-writer.add_images('ConfusionMatrix/Train', cm_image_train, dataformats='CHW', global_step=last_step)
-writer.add_images('ConfusionMatrix/Validation', cm_image_validation, dataformats='CHW', global_step=last_step)
-writer.add_images('ConfusionMatrix/Test', cm_image_test, dataformats='CHW', global_step=last_step)
+writer.add_images('ConfusionMatrix/Train', cm_image_train, dataformats='CHW', global_step=num_epochs - 1)
+writer.add_images('ConfusionMatrix/Validation', cm_image_validation, dataformats='CHW', global_step=num_epochs - 1)
+writer.add_images('ConfusionMatrix/Test', cm_image_test, dataformats='CHW', global_step=num_epochs - 1)
 
 print('Best validation accuracy %f' % max(validation_accs))
 print('Test accuracy %f' % get_accuracy(test_loader, model, device))

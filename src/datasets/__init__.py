@@ -3,3 +3,4 @@ from .mmact import MmactDataset
 from .functions import *
 from .constants import *
 from .balanced_sampler import BalancedSampler
+from .concat_dataset import ConcatDataset

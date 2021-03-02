@@ -3,6 +3,7 @@ import importlib
 import sys
 import random
 import torch
+import json
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -90,6 +91,8 @@ def train_and_test(args: argparse.Namespace):
     model_kwargs = modality_config.get('model').get('kwargs')
     if args.out_size is not None:
         model_kwargs['out_size'] = args.out_size
+    if args.dr is not None and modality != 'sdfdi':
+        model_kwargs['dropout_rate'] = args.dr
     model = getattr(models, model_class_name)(
         *modality_config.get('model').get('args'),
         **model_kwargs
@@ -127,20 +130,20 @@ def train_and_test(args: argparse.Namespace):
             print('Experiment:  %s' % experiment)
         writer = SummaryWriter('../logs/' + experiment)
 
-        train_losses, val_losses, val_accs, train_accs, last_step = train_triplet_loss(model=model,
-                                                                                       criterion=criterion,
-                                                                                       optimizer=optimizer,
-                                                                                       scheduler=scheduler,
-                                                                                       class_names=class_names,
-                                                                                       train_loader=train_loader,
-                                                                                       val_loader=validation_loader,
-                                                                                       num_epochs=num_epochs,
-                                                                                       device=device,
-                                                                                       experiment=experiment,
-                                                                                       writer=writer,
-                                                                                       n_neighbors=num_neighbors,
-                                                                                       verbose=args.verbose
-                                                                                       )
+        train_losses, val_losses, val_accs, train_accs = train_triplet_loss(model=model,
+                                                                            criterion=criterion,
+                                                                            optimizer=optimizer,
+                                                                            scheduler=scheduler,
+                                                                            class_names=class_names,
+                                                                            train_loader=train_loader,
+                                                                            val_loader=validation_loader,
+                                                                            num_epochs=num_epochs,
+                                                                            device=device,
+                                                                            experiment=experiment,
+                                                                            writer=writer,
+                                                                            n_neighbors=num_neighbors,
+                                                                            verbose=args.verbose
+                                                                            )
         max_val_acc = max(val_accs) if len(val_accs) > 0 else max_val_acc
         max_train_acc = max(train_accs) if len(train_accs) > 0 else max_train_acc
         min_train_loss = max(train_losses) if len(train_losses) > 0 else min_train_loss
@@ -173,9 +176,11 @@ def train_and_test(args: argparse.Namespace):
             'hparam/test_acc': test_acc,
             'hparam/train_acc': max_train_acc
         }, run_name='hparams')
-        writer.add_images('ConfusionMatrix/Test', cm_image, dataformats='CHW', global_step=last_step)
+        writer.add_images('ConfusionMatrix/Test', cm_image, dataformats='CHW', global_step=num_epochs - 1)
         writer.add_embedding(test_scores, metadata=[class_names[idx] for idx in test_labels.int().tolist()],
                              tag="test (%f%%)" % test_acc)
+        writer.add_text('config', json.dumps(param_config, indent=2))
+        writer.add_text('args', json.dumps(args.__dict__, indent=2))
         writer.flush()
         writer.close()
 
@@ -205,13 +210,13 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=None)
     parser.add_argument('--margin', type=float, default=None)
     parser.add_argument('--out_size', type=int, default=None)
+    parser.add_argument('--dr', type=float, default=None, help='Dropout rate')
     parser.add_argument('--semi_hard', dest='semi_hard', action='store_true')
     parser.add_argument('--hard', dest='semi_hard', action='store_false')
     parser.add_argument('--test', action='store_true', help='Use this argument to test instead of train')
     parser.add_argument('--saved_state', type=str, default=None, help='Specify saved model when using --test')
-    parser.add_argument('--verbose', action='store_true', help='Be more verbose')
     parser.add_argument('--no_scheduler', action='store_true', help='Don\'t use a scheduler')
-    parser.set_defaults(no_scheduler=False, semi_hard=None)
+    parser.set_defaults(no_scheduler=False, semi_hard=None, verbose=True)
     args = parser.parse_args()
 
     training_testing_results = train_and_test(args)

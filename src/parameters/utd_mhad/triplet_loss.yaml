@@ -1,26 +1,5 @@
 modalities:
   inertial:
-    transforms:
-      - class_name: Normalize
-        from_module: transforms
-        in_test: true
-        args:
-          - [ -0.62575306, -0.26179606, -0.07613295, 3.70461374, -4.34395205, -0.09911604 ]
-          - [ 0.6440941, 0.46361165, 0.43402348, 87.2470291, 100.86503743, 107.77852571 ]
-      - class_name: Jittering
-        from_module: transforms
-        in_test: false
-        args:
-          - [ 0, 500, 1000 ]
-      - class_name: Sampler
-        from_module: transforms
-        in_test: true
-        args:
-          - 107
-      - class_name: Flatten
-        from_module: transforms
-        in_test: true
-        args: [ ]
     num_epochs: 400
     num_neighbors: 21
     num_samples: 4
@@ -28,7 +7,7 @@ modalities:
     model:
       class_name: CNN1D
       args:
-        - 642
+        - 321
       kwargs:
         out_size: 512
         norm_out: true
@@ -42,7 +21,7 @@ modalities:
       class_name: RMSprop
       from_module: torch.optim
       kwargs:
-        lr: 0.0001
+        lr: 0.00001
     scheduler:
       class_name: ReduceLROnPlateau
       from_module: torch.optim.lr_scheduler
@@ -50,7 +29,7 @@ modalities:
         patience: 10
         verbose: true
   sdfdi:
-    num_epochs: 200
+    num_epochs: 400
     num_neighbors: 21
     num_samples: 4
     batch_size: 32
@@ -70,7 +49,7 @@ modalities:
       class_name: RMSprop
       from_module: torch.optim
       kwargs:
-        lr: 0.0001
+        lr: 0.00001
     scheduler:
       class_name: ReduceLROnPlateau
       from_module: torch.optim.lr_scheduler
@@ -127,7 +106,7 @@ modalities:
       class_name: RMSprop
       from_module: torch.optim
       kwargs:
-        lr: 0.0001
+        lr: 0.00001
     scheduler:
       class_name: ReduceLROnPlateau
       from_module: torch.optim.lr_scheduler

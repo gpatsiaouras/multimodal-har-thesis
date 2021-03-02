@@ -5,12 +5,17 @@ import collections.abc
 DEFAULT_YAML = 'default.yaml'
 
 
-def load_yaml(filename):
+def load_yaml(filename, append=True):
     """
     Appends the default yaml config with the requested yaml config
     :param filename: str
+    :param append: bool append requested one to the default.yaml
     :return: dict
     """
+    # If no append is specified return the yaml as is. No merging with default
+    if not append:
+        return _read_yaml(filename)
+
     # Retrieve name of parent yaml
     if os.path.basename(filename) == DEFAULT_YAML:
         return _read_yaml(filename)
@@ -26,7 +31,7 @@ def load_yaml(filename):
     file_content = _read_yaml(os.path.abspath(filename))
 
     # Merge the two yaml by recursive update
-    return __deep_update(default_file_content, file_content)
+    return _deep_update(default_file_content, file_content)
 
 
 def _read_yaml(file):
@@ -42,7 +47,7 @@ def _read_yaml(file):
     return content
 
 
-def __deep_update(a, b):
+def _deep_update(a, b):
     """
     Updates dict a with values from dict b, recursively
     :param a: dict
@@ -51,7 +56,7 @@ def __deep_update(a, b):
     """
     for k, v in b.items():
         if isinstance(v, collections.abc.Mapping):
-            a[k] = __deep_update(a.get(k, {}), v)
+            a[k] = _deep_update(a.get(k, {}), v)
         else:
             a[k] = v
 

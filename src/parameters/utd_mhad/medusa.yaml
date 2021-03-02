@@ -1,11 +1,5 @@
 modalities:
   inertial:
-    model:
-      class_name: CNN1D
-      args:
-        - 321
-        - 27
-      kwargs: { }
     transforms:
       - class_name: Normalize
         from_module: transforms
@@ -13,40 +7,25 @@ modalities:
         args:
           - [ -0.62575306, -0.26179606, -0.07613295, 3.70461374, -4.34395205, -0.09911604 ]
           - [ 0.6440941, 0.46361165, 0.43402348, 87.2470291, 100.86503743, 107.77852571 ]
+      - class_name: Jittering
+        from_module: transforms
+        in_test: false
+        args:
+          - [ 0, 500, 1000 ]
       - class_name: Sampler
         from_module: transforms
         in_test: true
         args:
           - 107
-      - class_name: FilterDimensions
-        from_module: transforms
-        in_test: true
-        args:
-          - [ 0, 1, 2 ]
-      - class_name: Jittering
-        from_module: transforms
-        in_test: false
-        args:
-          - [0, 500, 1000]
       - class_name: Flatten
         from_module: transforms
         in_test: true
         args: [ ]
-    learning_rate: 0.0002
-    batch_size: 16
-    num_epochs: 200
-    criterion:
-      class_name: CrossEntropyLoss
-      from_module: torch.nn
-    optimizer:
-      class_name: SGD
-      from_module: torch.optim
-  sdfdi:
     model:
-      class_name: MobileNetV2
+      class_name: CNN1D
       args:
-        - 27
-      kwargs: { }
+        - 642
+  sdfdi:
     transforms:
       - class_name: RandomResizedCrop
         from_module: torchvision.transforms
@@ -62,24 +41,10 @@ modalities:
         from_module: torchvision.transforms
         in_test: true
         args: [ ]
-    learning_rate: 0.0001
-    batch_size: 32
-    num_epochs: 50
-    criterion:
-      class_name: CrossEntropyLoss
-      from_module: torch.nn
-    optimizer:
-      class_name: Adam
-      from_module: torch.optim
-  skeleton:
     model:
-      class_name: BiLSTM
+      class_name: MobileNetV2
       args: [ ]
-      kwargs:
-        input_size: 27
-        hidden_size: 128
-        num_layers: 2
-        out_size: 27
+  skeleton:
     transforms:
       - class_name: Normalize
         from_module: transforms
@@ -104,21 +69,14 @@ modalities:
           - -10
           - 10
           - 10
-      - class_name: ToSequence
+      - class_name: Flatten
         from_module: transforms
         in_test: true
-        args:
-          - 41
-          - 27
-    learning_rate: 0.001
-    batch_size: 32
-    num_epochs: 350
-    criterion:
-      class_name: CrossEntropyLoss
-      from_module: torch.nn
-    optimizer:
-      class_name: RMSprop
-      from_module: torch.optim
+        args: [ ]
+    model:
+      class_name: CNN1D
+      args:
+        - 1107
 
 dataset:
   class_name: UtdMhadDataset
@@ -132,3 +90,31 @@ dataset:
   test_kwargs:
     subjects: [ 2, 4, 6, 8 ]
     actions: null
+
+general:
+  batch_size: 32
+  num_samples: 4
+  num_epochs: 5
+  num_neighbors: 21
+  shuffle: true
+  mlp_out_size: 512
+  model_kwargs:
+    out_size: 512
+    norm_out: true
+  criterion:
+    class_name: TripletLossHard
+    from_module: losses
+    kwargs:
+      margin: 0.1
+      semi_hard: true
+  optimizer:
+    class_name: RMSprop
+    from_module: torch.optim
+    kwargs:
+      lr: 0.00001
+  scheduler:
+    class_name: ReduceLROnPlateau
+    from_module: torch.optim.lr_scheduler
+    kwargs:
+      patience: 10
+      verbose: true
