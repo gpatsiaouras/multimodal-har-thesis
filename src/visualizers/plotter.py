@@ -35,13 +35,14 @@ def plot_inertial_gyroscope_two(title, y_labels, data):
     fig.show()
 
 
-def plot_inertial(data, title, y_label, save=False):
+def plot_inertial(data, title, y_label, save=False, show_figure=True):
     """
     Plots inertial data
     :param data: ndarray
     :param title: Plot title
     :param y_label: Y axis label
     :param save: Save figure to file
+    :param show_figure: Show figure
     """
     plt.style.use('seaborn-whitegrid')
     fig, ax = plt.subplots()
@@ -52,7 +53,8 @@ def plot_inertial(data, title, y_label, save=False):
     fig.legend()
     if save:
         _save_plot(fig, '%s.png' % title.strip())
-    fig.show()
+    if show_figure:
+        fig.show()
 
 
 def plot_accuracy(train_acc, validation_acc=None, save=False, show_figure=True):
@@ -154,4 +156,6 @@ def _save_plot(fig, filename):
     filename = datetime + '_' + filename
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
-    fig.savefig(os.path.join(save_dir, filename))
+    final_filename = os.path.join(save_dir, filename)
+    fig.savefig(final_filename)
+    print('Saved figure in ' + final_filename)
