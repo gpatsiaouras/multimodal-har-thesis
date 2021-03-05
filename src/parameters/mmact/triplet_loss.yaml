@@ -5,9 +5,9 @@ modalities:
       args:
         - 1284
       kwargs:
-        out_size: 128
+        out_size: 512
+        dropout_rate: 0.1
         norm_out: true
-    num_epochs: 100
     criterion:
       class_name: TripletLossHard
       from_module: losses
@@ -17,6 +17,15 @@ modalities:
     optimizer:
       class_name: RMSprop
       from_module: torch.optim
-    num_neighbors: 4
+      kwargs:
+        lr: 0.00001
+    scheduler:
+      class_name: ReduceLROnPlateau
+      from_module: torch.optim.lr_scheduler
+      kwargs:
+        patience: 10
+        verbose: true
+    num_epochs: 100
+    num_neighbors: 21
     num_samples: 4
     batch_size: 32

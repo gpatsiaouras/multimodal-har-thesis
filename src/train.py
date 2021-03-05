@@ -26,7 +26,7 @@ torch.backends.cudnn.benchmark = False
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--modality', choices=AVAILABLE_MODALITIES, default='inertial')
-parser.add_argument('--gpu', type=int, default=0, help='Only applicable when cuda gpu is available')
+parser.add_argument('--gpu', type=int, default=2, help='Only applicable when cuda gpu is available')
 parser.add_argument('--param_file', type=str, default='parameters/utd_mhad/default.yaml')
 parser.add_argument('--epochs', type=int, default=None)
 parser.add_argument('--experiment', type=str, default=None)

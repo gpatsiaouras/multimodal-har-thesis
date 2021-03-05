@@ -54,8 +54,9 @@ def _deep_update(a, b):
     :param b: dict
     :return: dict
     """
+    keys_that_should_not_go_deeper = ['model', 'transforms']
     for k, v in b.items():
-        if isinstance(v, collections.abc.Mapping):
+        if isinstance(v, collections.abc.Mapping) and k not in keys_that_should_not_go_deeper:
             a[k] = _deep_update(a.get(k, {}), v)
         else:
             a[k] = v

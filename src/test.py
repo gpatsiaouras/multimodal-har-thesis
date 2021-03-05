@@ -41,7 +41,10 @@ test_dataset = SelectedDataset(modality=modality, transform=test_transforms, **t
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=shuffle)
 
 # Initiate the model
-model = getattr(models, model_class_name)(*param_config.get('modalities').get(modality).get('model').get('args'))
+model = getattr(models, model_class_name)(
+    *param_config.get('modalities').get(modality).get('model').get('args'),
+    **param_config.get('modalities').get(modality).get('model').get('kwargs')
+)
 model = model.to(device)
 model.load_state_dict(torch.load(args.saved_state))
 

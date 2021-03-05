@@ -6,6 +6,7 @@ import torch.nn.functional as F
 class TripletLossHard(nn.Module):
     """
     Batch hard/semi-hard manner of triplet loss for embeddings
+    Adapted from: https://github.com/lyakaap/NetVLAD-pytorch/blob/master/hard_triplet_loss.py
 
     Attributes
     ----------
