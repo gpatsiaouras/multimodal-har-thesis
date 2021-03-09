@@ -11,13 +11,13 @@ modalities:
       kwargs:
         out_size: 512
         norm_out: true
+        dropout_rate: 0.1
     criterion:
       class_name: TripletLossHard
       from_module: losses
       kwargs:
         margin: 0.1
         semi_hard: false
-        dropout_rate: 0.1
     optimizer:
       class_name: RMSprop
       from_module: torch.optim

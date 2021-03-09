@@ -11,7 +11,7 @@ import datasets
 import models
 import numpy
 from datasets import BalancedSampler, AVAILABLE_MODALITIES, get_transforms_from_config
-from tools import train_triplet_loss, get_predictions_with_knn, load_yaml
+from tools import train_triplet_loss, get_predictions_with_knn, load_yaml, save_model
 from visualizers import plot_confusion_matrix
 
 # Seed for reproducibility
@@ -91,7 +91,7 @@ def train_and_test(args: argparse.Namespace):
     model_kwargs = modality_config.get('model').get('kwargs')
     if args.out_size is not None:
         model_kwargs['out_size'] = args.out_size
-    if args.dr is not None and modality != 'sdfdi':
+    if args.dr is not None:
         model_kwargs['dropout_rate'] = args.dr
     model = getattr(models, model_class_name)(
         *modality_config.get('model').get('args'),
@@ -144,6 +144,10 @@ def train_and_test(args: argparse.Namespace):
                                                                             n_neighbors=num_neighbors,
                                                                             verbose=args.verbose
                                                                             )
+
+        # Save last state of model
+        save_model(model, '%s_last_state.pt' % experiment)
+
         max_val_acc = max(val_accs) if len(val_accs) > 0 else max_val_acc
         max_train_acc = max(train_accs) if len(train_accs) > 0 else max_train_acc
         min_train_loss = max(train_losses) if len(train_losses) > 0 else min_train_loss

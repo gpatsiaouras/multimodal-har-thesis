@@ -5,7 +5,8 @@ modalities:
       args:
         - 321
         - 27
-      kwargs: { }
+      kwargs:
+        dropout_rate: 0.4
     transforms:
       - class_name: Normalize
         from_module: transforms
@@ -32,21 +33,23 @@ modalities:
         from_module: transforms
         in_test: true
         args: [ ]
-    learning_rate: 0.0002
     batch_size: 16
-    num_epochs: 200
+    num_epochs: 400
     criterion:
       class_name: CrossEntropyLoss
       from_module: torch.nn
     optimizer:
       class_name: SGD
       from_module: torch.optim
+      kwargs:
+        lr: 0.0002
   sdfdi:
     model:
       class_name: MobileNetV2
       args:
         - 27
-      kwargs: { }
+      kwargs:
+        dropout_rate: 0.8
     transforms:
       - class_name: RandomResizedCrop
         from_module: torchvision.transforms
@@ -62,18 +65,19 @@ modalities:
         from_module: torchvision.transforms
         in_test: true
         args: [ ]
-    learning_rate: 0.0001
     batch_size: 32
-    num_epochs: 50
+    num_epochs: 100
     criterion:
       class_name: CrossEntropyLoss
       from_module: torch.nn
     optimizer:
       class_name: Adam
       from_module: torch.optim
+      kwargs:
+        lr: 0.0001
   skeleton:
     model:
-      class_name: BiLSTM
+      class_name: BiGRU
       args: [ ]
       kwargs:
         input_size: 27
@@ -110,7 +114,6 @@ modalities:
         args:
           - 41
           - 27
-    learning_rate: 0.001
     batch_size: 32
     num_epochs: 350
     criterion:
@@ -119,6 +122,8 @@ modalities:
     optimizer:
       class_name: RMSprop
       from_module: torch.optim
+      kwargs:
+        lr: 0.001
 
 dataset:
   class_name: UtdMhadDataset

@@ -1,3 +1,5 @@
+# ATTENTION!
+# This configuration file is not inheriting from default.yaml
 modalities:
   inertial:
     transforms:
@@ -7,6 +9,11 @@ modalities:
         args:
           - [ -0.62575306, -0.26179606, -0.07613295, 3.70461374, -4.34395205, -0.09911604 ]
           - [ 0.6440941, 0.46361165, 0.43402348, 87.2470291, 100.86503743, 107.77852571 ]
+      - class_name: FilterDimensions
+        from_module: transforms
+        in_test: true
+        args:
+          - [ 0, 1, 2 ]
       - class_name: Jittering
         from_module: transforms
         in_test: false
@@ -23,8 +30,12 @@ modalities:
         args: [ ]
     model:
       class_name: CNN1D
-      args:
-        - 642
+      args: [ ]
+      kwargs:
+        len_seq: 321
+        norm_out: true
+        out_size: 512
+        dropout_rate: 0.1
   sdfdi:
     transforms:
       - class_name: RandomResizedCrop
@@ -44,6 +55,9 @@ modalities:
     model:
       class_name: MobileNetV2
       args: [ ]
+      kwargs:
+        norm_out: true
+        out_size: 512
   skeleton:
     transforms:
       - class_name: Normalize
@@ -75,8 +89,12 @@ modalities:
         args: [ ]
     model:
       class_name: CNN1D
-      args:
-        - 1107
+      args: [ ]
+      kwargs:
+        len_seq: 1107
+        norm_out: true
+        out_size: 512
+        dropout_rate: 0.1
 
 dataset:
   class_name: UtdMhadDataset
@@ -93,20 +111,21 @@ dataset:
 
 general:
   batch_size: 32
-  num_samples: 4
+  num_samples: 2
   num_epochs: 5
   num_neighbors: 21
   shuffle: true
-  mlp_out_size: 512
-  model_kwargs:
+  mlp_kwargs:
+    input_size: 1536
     out_size: 512
+    hidden_size: 2048
     norm_out: true
   criterion:
     class_name: TripletLossHard
     from_module: losses
     kwargs:
-      margin: 0.1
-      semi_hard: true
+      margin: 0.9
+      semi_hard: false
   optimizer:
     class_name: RMSprop
     from_module: torch.optim

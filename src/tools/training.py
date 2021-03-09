@@ -74,7 +74,7 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
         train_loss = train_running_loss / len(train_loader)
         train_losses.append(train_loss)
         # Validation Loss
-        validation_loss = get_loss(validation_loader, model, device, criterion)
+        validation_loss, _, _ = get_loss(validation_loader, model, device, criterion)
 
         ##############
         # Accuracies #
@@ -88,7 +88,7 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
         if len(validation_accuracies) > 0 and validation_acc > max(validation_accuracies):
             if saved_model_path is not None:
                 os.remove(saved_model_path)
-            saved_model_path = save_model(model, '%s.pt' % experiment)
+            saved_model_path = save_model(model, '%s_best_val.pt' % experiment)
         validation_accuracies.append(validation_acc)
         validation_losses.append(validation_loss)
 
@@ -168,18 +168,20 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
             labels_concat = torch.cat((labels_concat, labels), dim=0)
 
         add_histograms(writer, model, epoch)
-        sum_distance_embeddings = torch.sum(torch.cdist(scores_concat, scores_concat))
-        writer.add_scalar('Embeddings/distances', sum_distance_embeddings, global_step=epoch)
+        writer.add_scalar('Embeddings/distances', torch.sum(torch.cdist(scores_concat, scores_concat)),
+                          global_step=epoch)
         # Calculations
         train_loss = train_running_loss / len(train_loader)
         writer.add_scalar('Loss/train', train_loss, global_step=epoch)
-        val_loss = get_loss(val_loader, model, device, criterion)
+        val_loss, val_scores, _ = get_loss(val_loader, model, device, criterion)
+        writer.add_scalar('Embeddings/distances_val', torch.sum(torch.cdist(val_scores, val_scores)),
+                          global_step=epoch)
         writer.add_scalar('Loss/validation', val_loss, global_step=epoch)
         if len(val_losses) > 0:
             # After the first save only for better result in validation
             if val_loss < min(val_losses):
                 os.remove(saved_model_path)
-                saved_model_path = save_model(model, '%s.pt' % experiment)
+                saved_model_path = save_model(model, '%s_best_val.pt' % experiment)
         else:
             # Save the model the first time without checking that the validation was reduced.
             saved_model_path = save_model(model, '%s.pt' % experiment)
@@ -244,7 +246,7 @@ def get_loss(data_loader, model, device, criterion):
     scores, labels = get_predictions(data_loader, model, device, apply_softmax=False)
     loss = criterion(scores, labels.argmax(dim=1))
 
-    return loss.item()
+    return loss.item(), scores, labels
 
 
 def get_accuracy(data_loader, model, device):

@@ -26,13 +26,17 @@ def plot_inertial_gyroscope(data, save):
     plot_inertial(data, title='Gyroscope', y_label='deg/sec', save=save)
 
 
-def plot_inertial_gyroscope_two(title, y_labels, data):
-    fig, axs = plt.subplots(1, 2)
-    fig.suptitle(title)
+def plot_inertial_gyroscope_multiple(title, y_label, legends, data, save=False, show_figure=True):
+    plt.style.use('seaborn-whitegrid')
+    fig, ax = plt.subplots()
     for i in range(len(data)):
-        axs[i].plot(data[i])
-        axs[i].set_title(y_labels[i])
-    fig.show()
+        ax.plot(data[i], label=legends[i])
+    ax.set(title=title, ylabel=y_label, xlabel='Timesteps')
+    fig.legend()
+    if save:
+        _save_plot(fig, '%s.png' % title.strip())
+    if show_figure:
+        plt.show()
 
 
 def plot_inertial(data, title, y_label, save=False, show_figure=True):
@@ -54,7 +58,7 @@ def plot_inertial(data, title, y_label, save=False, show_figure=True):
     if save:
         _save_plot(fig, '%s.png' % title.strip())
     if show_figure:
-        fig.show()
+        plt.show()
 
 
 def plot_accuracy(train_acc, validation_acc=None, save=False, show_figure=True):

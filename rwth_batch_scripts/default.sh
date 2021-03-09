@@ -21,4 +21,4 @@ source venv/bin/activate
 cd /home/cn226306/multimodal-har-thesis/src
 
 # Execute
-python -u train.py --modality sdfdi --param_file $PARAM_FILE
+python -u train.py --modality sdfdi --param_file $PARAM_FILE --gpu 0

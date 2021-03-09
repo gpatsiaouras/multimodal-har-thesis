@@ -5,7 +5,7 @@ from torchvision.models import mobilenet
 
 
 class MobileNetV2(models.MobileNetV2):
-    def __init__(self, out_size, pretrained=True, norm_out=False):
+    def __init__(self, out_size, pretrained=True, norm_out=False, dropout_rate=0.8):
         self.name = 'mobilenet_v2'
         # Mobilenet by default will use the num_classes to create a classifier with number of neurons in the output
         # of the last fully connected layer are the num_classes. Instead we want to be able to retrieve a feature vector
@@ -17,7 +17,7 @@ class MobileNetV2(models.MobileNetV2):
             self.load_state_dict(state_dict)
 
         self.classifier = nn.Sequential(
-            nn.Dropout(p=0.2, inplace=False),
+            nn.Dropout(p=dropout_rate, inplace=False),
             nn.Linear(self.last_channel, 2048),
             nn.Linear(2048, out_size)
         )
