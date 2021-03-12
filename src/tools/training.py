@@ -106,26 +106,35 @@ def train(model, criterion, optimizer, train_loader, validation_loader, num_epoc
     return train_accuracies, validation_accuracies, train_losses, validation_losses
 
 
-def add_histograms(writer, model, step):
+def add_histograms(writer, model, step, subtitle=''):
     """
     Adds histogram data according to the model to tensorboard.
     :param writer: SummaryWriter
     :param model: Model
     :param step: global step
+    :param subtitle: When going deeper provide a name to separate the fc1, fc2, fc3
     :return:
     """
     if hasattr(model, 'fc1'):
-        writer.add_histogram('fc1', model.fc1.weight, global_step=step)
+        writer.add_histogram(subtitle + 'fc1', model.fc1.weight, global_step=step)
     if hasattr(model, 'fc2'):
-        writer.add_histogram('fc2', model.fc2.weight, global_step=step)
+        writer.add_histogram(subtitle + 'fc2', model.fc2.weight, global_step=step)
     if hasattr(model, 'fc3'):
-        writer.add_histogram('fc3', model.fc3.weight, global_step=step)
+        writer.add_histogram(subtitle + 'fc3', model.fc3.weight, global_step=step)
     if hasattr(model, 'last_fc'):
-        writer.add_histogram('last_fc', model.last_fc.weight, global_step=step)
+        writer.add_histogram(subtitle + 'last_fc', model.last_fc.weight, global_step=step)
+    if hasattr(model, 'mlp'):
+        add_histograms(writer, model.mlp, step, subtitle='mlp')
+    if hasattr(model, 'n1'):
+        add_histograms(writer, model.mlp, step, subtitle='n1')
+    if hasattr(model, 'n2'):
+        add_histograms(writer, model.mlp, step, subtitle='n2')
+    if hasattr(model, 'n3'):
+        add_histograms(writer, model.mlp, step, subtitle='n3')
 
 
 def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, val_loader, num_epochs, device,
-                       experiment, n_neighbors, writer, scheduler=None, verbose=False):
+                       experiment, n_neighbors, writer, scheduler=None, verbose=False, skip_accuracy=False):
     start_time = time.time()
     time_per_epoch = []
     saved_model_path = None
@@ -133,6 +142,8 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
     train_accuracies = []
     val_losses = []
     val_accuracies = []
+    train_accuracy = -1
+    val_accuracy = -1
     scores_concat = None
     labels_concat = None
 
@@ -174,9 +185,6 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
         train_loss = train_running_loss / len(train_loader)
         writer.add_scalar('Loss/train', train_loss, global_step=epoch)
         val_loss, val_scores, _ = get_loss(val_loader, model, device, criterion)
-        writer.add_scalar('Embeddings/distances_val', torch.sum(torch.cdist(val_scores, val_scores)),
-                          global_step=epoch)
-        writer.add_scalar('Loss/validation', val_loss, global_step=epoch)
         if len(val_losses) > 0:
             # After the first save only for better result in validation
             if val_loss < min(val_losses):
@@ -184,44 +192,47 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
                 saved_model_path = save_model(model, '%s_best_val.pt' % experiment)
         else:
             # Save the model the first time without checking that the validation was reduced.
+            print('Saved model for the first time')
             saved_model_path = save_model(model, '%s.pt' % experiment)
         val_losses.append(val_loss)
-        if scheduler:
-            scheduler.step(val_loss)
-        # Confusion in general
-        val_cm, val_accuracy, _, _ = get_predictions_with_knn(n_neighbors, train_loader, val_loader, model, device)
-        train_cm, train_accuracy, _, _ = get_predictions_with_knn(n_neighbors, train_loader, train_loader, model,
-                                                                  device)
-        val_accuracies.append(val_accuracy)
-        train_accuracies.append(train_accuracy)
-        writer.add_scalar('Accuracy/validation', val_accuracy, global_step=epoch)
-        writer.add_scalar('Accuracy/train', train_accuracy, global_step=epoch)
-        train_image = plot_confusion_matrix(
-            cm=train_cm,
-            title='Confusion Matrix - Percentage % - Train Loader',
-            normalize=False,
-            save=False,
-            show_figure=False,
-            classes=class_names
-        )
-        val_image = plot_confusion_matrix(
-            cm=val_cm,
-            title='Confusion Matrix - Percentage % - Val Loader',
-            normalize=False,
-            save=False,
-            show_figure=False,
-            classes=class_names
-        )
-        writer.add_images('ConfusionMatrix/Train', train_image, dataformats='CHW', global_step=epoch)
-        writer.add_images('ConfusionMatrix/Validation', val_image, dataformats='CHW', global_step=epoch)
+        if not skip_accuracy:
+            writer.add_scalar('Embeddings/distances_val', torch.sum(torch.cdist(val_scores, val_scores)),
+                              global_step=epoch)
+            writer.add_scalar('Loss/validation', val_loss, global_step=epoch)
+            if scheduler:
+                scheduler.step(val_loss)
+            # Confusion in general
+            val_cm, val_accuracy, _, _ = get_predictions_with_knn(n_neighbors, train_loader, val_loader, model, device)
+            train_cm, train_accuracy, _, _ = get_predictions_with_knn(n_neighbors, train_loader, train_loader, model,
+                                                                      device)
+
+            val_accuracies.append(val_accuracy)
+            train_accuracies.append(train_accuracy)
+            writer.add_scalar('Accuracy/validation', val_accuracy, global_step=epoch)
+            writer.add_scalar('Accuracy/train', train_accuracy, global_step=epoch)
+            train_image = plot_confusion_matrix(
+                cm=train_cm,
+                title='Confusion Matrix - Percentage % - Train Loader',
+                normalize=False,
+                save=False,
+                show_figure=False,
+                classes=class_names
+            )
+            val_image = plot_confusion_matrix(
+                cm=val_cm,
+                title='Confusion Matrix - Percentage % - Val Loader',
+                normalize=False,
+                save=False,
+                show_figure=False,
+                classes=class_names
+            )
+            writer.add_images('ConfusionMatrix/Train', train_image, dataformats='CHW', global_step=epoch)
+            writer.add_images('ConfusionMatrix/Validation', val_image, dataformats='CHW', global_step=epoch)
 
         if verbose:
             # Timing
             total_epoch_time = time.time() - epoch_start_time
             time_per_epoch.append(total_epoch_time)
-            total_time = time.time() - start_time
-            avg_time_per_epoch = sum(time_per_epoch) / len(time_per_epoch)
-            remaining_time = (num_epochs - epoch) * avg_time_per_epoch
 
             # Debug information
             print_epoch_info(start_time, epoch_start_time, time_per_epoch, epoch, num_epochs, train_loss, val_loss,

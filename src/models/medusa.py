@@ -10,6 +10,7 @@ class Medusa(nn.Module):
         self.name = 'medusa'
         self.n1 = CNN1D(**n1_kwargs)
         self.n2 = MobileNetV2(**n2_kwargs)
+        self.n3 = None
         if n3_kwargs:
             self.n3 = CNN1D(**n3_kwargs)
         self.mlp = MLP(**mlp_kwargs)

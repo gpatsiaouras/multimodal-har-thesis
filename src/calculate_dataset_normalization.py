@@ -41,16 +41,17 @@ def get_dataset_class(dataset_name):
         raise Exception('Unsupported dataset: %s' % dataset_name)
 
 
-# Set argument parser
-parser = argparse.ArgumentParser(prog='PROG')
-parser.add_argument('--dataset', choices=AVAILABLE_DATASETS, default='utd_mhad')
-parser.add_argument('--modality', choices=AVAILABLE_MODALITIES, required=True)
-args = parser.parse_args()
+if __name__ == '__main__':
+    # Set argument parser
+    parser = argparse.ArgumentParser(prog='PROG')
+    parser.add_argument('--dataset', choices=AVAILABLE_DATASETS, default='utd_mhad')
+    parser.add_argument('--modality', choices=AVAILABLE_MODALITIES, required=True)
+    args = parser.parse_args()
 
-SelectedDataset = get_dataset_class(args.dataset)
-selectedDim = AVAILABLE_MODALITIES_DIM[AVAILABLE_MODALITIES.index(args.modality)]
+    SelectedDataset = get_dataset_class(args.dataset)
+    selectedDim = AVAILABLE_MODALITIES_DIM[AVAILABLE_MODALITIES.index(args.modality)]
 
-train_dataset = SelectedDataset(modality=args.modality)
-mean, std = calculate_means_stds(train_dataset, dim=selectedDim)
-print('Mean: %s' % mean)
-print('Std: %s' % std)
+    train_dataset = SelectedDataset(modality=args.modality)
+    mean, std = calculate_means_stds(train_dataset, dim=selectedDim)
+    print('Mean: %s' % mean)
+    print('Std: %s' % std)

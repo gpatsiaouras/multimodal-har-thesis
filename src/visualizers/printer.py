@@ -15,8 +15,8 @@ def print_table(data):
     print(table)
 
 
-def print_epoch_info(start_time, epoch_start_time, time_per_epoch, epoch, num_epochs, train_loss, validation_loss,
-                     train_acc, validation_acc):
+def print_epoch_info(start_time, epoch_start_time, time_per_epoch, epoch, num_epochs, train_loss, validation_loss=None,
+                     train_acc=None, validation_acc=None):
     total_epoch_time = time.time() - epoch_start_time
     time_per_epoch.append(total_epoch_time)
     total_time = time.time() - start_time
@@ -24,9 +24,12 @@ def print_epoch_info(start_time, epoch_start_time, time_per_epoch, epoch, num_ep
     remaining_time = (num_epochs - epoch) * avg_time_per_epoch
     print('\n=== Epoch %d/%d ===' % (epoch + 1, num_epochs))
     print('Train Loss: %.3f' % train_loss)
-    print('Validation Loss: %.3f' % validation_loss)
-    print('Train accuracy: %f' % train_acc)
-    print('Validation accuracy: %f' % validation_acc)
+    if validation_loss:
+        print('Validation Loss: %.3f' % validation_loss)
+    if train_acc:
+        print('Train accuracy: %f' % train_acc)
+    if validation_acc:
+        print('Validation accuracy: %f' % validation_acc)
     print('Epoch duration: %s' % time.strftime('%H:%M:%S', time.gmtime(total_epoch_time)))
     print('Elapsed / Remaining time: %s/%s' % (
         time.strftime('%H:%M:%S', time.gmtime(total_time)), time.strftime('%H:%M:%S', time.gmtime(remaining_time))))

@@ -132,7 +132,7 @@ dataset:
     subjects: [ 1, 3, 5, 7 ]
     actions: null
   validation_kwargs:
-    subjects: [ 2, 4 ]
+    subjects: [ 2, 4, 6, 8 ]
     actions: null
   test_kwargs:
     subjects: [ 2, 4, 6, 8 ]
