@@ -1,12 +1,21 @@
 import torch
 
 
-@torch.no_grad()
-def get_fused_feature_vector(device, *args):
-    all_feature_vectors = torch.zeros(len(args), args[0][0].shape[0], args[0][0].shape[1], device=device)
-    for idx in range(len(args)):
-        (data, labels) = args[idx]
-        all_feature_vectors[idx] = data
+def get_fused_scores(all_scores, new_scores, rule):
+    if all_scores is None:
+        return new_scores
 
-    # Returns the averages feature vectors and labels (it doesn't matter which ones every one of them is the same)
-    return torch.mean(all_feature_vectors, dim=0), args[0][1]
+    if rule == 'concat':
+        return torch.cat((all_scores, new_scores), dim=1)
+    elif rule == 'avg':
+        return torch.mean(torch.stack((all_scores, new_scores)), dim=0)
+    else:
+        raise ValueError(rule + ' is not a valid rule')
+
+
+def get_fused_labels(all_labels, new_labels):
+    if all_labels is None:
+        return new_labels
+
+    assert int((all_labels - new_labels).sum()) == 0
+    return all_labels

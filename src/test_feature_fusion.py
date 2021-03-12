@@ -1,114 +1,107 @@
-import sys
+import argparse
+import random
 
+import numpy
 import torch
-import torchvision
 from torch.utils.data import DataLoader
 
-from datasets import UtdMhadDataset
-from models import ELM, CNN1D, MobileNetV2, BiGRU
-from tools import get_fused_feature_vector, get_predictions
-from transforms import Sampler, FilterDimensions, Flatten, Compose, Normalize, Resize, FilterJoints
+import datasets
+import models
+from datasets import get_transforms_from_config
+from models import ELM
+from tools import get_predictions, load_yaml, get_fused_scores, get_fused_labels
 
-torch.manual_seed(0)
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# Seed for reproducibility
+seed = 1
+torch.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
+torch.cuda.manual_seed(seed)
+numpy.random.seed(seed)
+random.seed(seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
-# Parameters
-batch_size = 64
-num_classes = 27
-input_size = 2048
-hidden_size = 8192
-# Skeleton stuff
-num_frames = 41
-hidden_size_skeleton = 128
-num_layers = 2
-selected_joints = [0, 5, 7, 9, 11, 13, 15, 17, 19]
-input_size_skeleton = len(selected_joints) * 3  # input size is joints times axis (per joint)
-sequence_length = num_frames
 
-inertial_mean = [-0.62575306, -0.26179606, -0.07613295, 3.70461374, -4.34395205, -0.09911604]
-inertial_std = [0.6440941, 0.46361165, 0.43402348, 87.2470291, 100.86503743, 107.77852571]
-skeleton_mean = [-0.09214367, -0.29444627, 2.87122181]
-skeleton_std = [0.13432376, 0.46162172, 0.12374677]
+def main(args):
+    # Select device
+    cuda_device = 'cuda:%d' % args.gpu
+    device = torch.device(cuda_device if torch.cuda.is_available() else 'cpu')
 
-# Datasets initialization train/test
-train_dataset_inertial = UtdMhadDataset(modality='inertial', subjects=[1, 3, 5, 7], transform=Compose([
-    Normalize(inertial_mean, inertial_std),
-    Sampler(107),
-    FilterDimensions([0, 1, 2]),
-    Flatten(),
-]))
-test_dataset_inertial = UtdMhadDataset(modality='inertial', subjects=[2, 4, 6, 8], transform=Compose([
-    Normalize(inertial_mean, inertial_std),
-    Sampler(107),
-    FilterDimensions([0, 1, 2]),
-    Flatten(),
-]))
-train_dataset_rgb = UtdMhadDataset(modality='sdfdi', subjects=[1, 3, 5, 7], transform=Compose([
-    torchvision.transforms.Resize(224),
-    torchvision.transforms.ToTensor()
-]))
-test_dataset_rgb = UtdMhadDataset(modality='sdfdi', subjects=[2, 4, 6, 8], transform=Compose([
-    torchvision.transforms.Resize(224),
-    torchvision.transforms.ToTensor()
-]))
-train_dataset_skeleton = UtdMhadDataset(modality='skeleton', subjects=[1, 3, 5, 7], transform=Compose([
-    Normalize(skeleton_mean, skeleton_std),
-    Resize(num_frames),
-    FilterJoints(selected_joints),
-    Flatten(),
-]))
-test_dataset_skeleton = UtdMhadDataset(modality='skeleton', subjects=[2, 4, 6, 8], transform=Compose([
-    Normalize(skeleton_mean, skeleton_std),
-    Resize(num_frames),
-    FilterJoints(selected_joints),
-    Flatten(),
-]))
+    # Load parameters from yaml file.
+    param_config = load_yaml(args.param_file)
+    shuffle = False
+    selected_dataset = getattr(datasets, param_config.get('dataset').get('class_name'))
+    train_dataset_kwargs = param_config.get('dataset').get('train_kwargs')
+    test_dataset_kwargs = param_config.get('dataset').get('test_kwargs')
 
-# Loaders
-train_loader_inertial = DataLoader(dataset=train_dataset_inertial, batch_size=batch_size)
-test_loader_inertial = DataLoader(dataset=test_dataset_inertial, batch_size=batch_size)
-train_loader_rgb = DataLoader(dataset=train_dataset_rgb, batch_size=batch_size)
-test_loader_rgb = DataLoader(dataset=test_dataset_rgb, batch_size=batch_size)
-train_loader_skeleton = DataLoader(dataset=train_dataset_skeleton, batch_size=batch_size)
-test_loader_skeleton = DataLoader(dataset=test_dataset_skeleton, batch_size=batch_size)
+    # modalities
+    modalities = []
+    if args.inertial_state is not None:
+        modalities.append('inertial')
+    if args.sdfdi_state is not None:
+        modalities.append('sdfdi')
+    if args.skeleton_state is not None:
+        modalities.append('skeleton')
 
-# Initialize models and load saved weights
-model_inertial = CNN1D(107 * 3, 27).to(device)
-model_inertial.load_state_dict(torch.load(sys.argv[1]))
-model_rgb = MobileNetV2(num_classes, pretrained=False).to(device)
-model_rgb.load_state_dict(torch.load(sys.argv[2]))
-model_skeleton = BiGRU(input_size_skeleton, hidden_size_skeleton, num_layers, num_classes).to(device)
-model_skeleton.load_state_dict(torch.load(sys.argv[3]))
+    # Synchronized lists
+    train_all_scores = None
+    train_all_labels = None
+    test_all_scores = None
+    test_all_labels = None
 
-# Get predictions from each model for each loader
-print('Retrieving the 2048 feature vectors for all models...')
-train_data_inertial = get_predictions(train_loader_inertial, model_inertial, device, apply_softmax=False)
-test_data_inertial = get_predictions(test_loader_inertial, model_inertial, device, apply_softmax=False)
-print('Inertial.. OK')
-train_data_rgb = get_predictions(train_loader_rgb, model_rgb, device, apply_softmax=False)
-test_data_rgb = get_predictions(test_loader_rgb, model_rgb, device, apply_softmax=False)
-print('RGB.. OK')
-train_data_skeleton = get_predictions(train_loader_skeleton, model_skeleton, device, apply_softmax=False)
-test_data_skeleton = get_predictions(test_loader_skeleton, model_skeleton, device, apply_softmax=False)
-print('Skeleton.. OK')
+    if len(modalities) < 2:
+        raise RuntimeError('Cannot fuse with less than two modalities')
 
-# Get fused data from all models
-print('Performing feature fusion...')
-elm_train_data = get_fused_feature_vector(device, train_data_inertial, train_data_rgb)
-elm_test_data = get_fused_feature_vector(device, test_data_inertial, test_data_rgb)
+    for modality in modalities:
+        if param_config.get('modalities').get(modality) is None:
+            break
 
-# Elm initialization
-elm = ELM(input_size=input_size, num_classes=num_classes, hidden_size=hidden_size, device=device)
+        batch_size = 16
+        train_transforms, test_transforms = get_transforms_from_config(
+            param_config.get('modalities').get(modality).get('transforms'))
+        train_dataset = selected_dataset(modality=modality, transform=train_transforms, **train_dataset_kwargs)
+        train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=shuffle)
+        test_dataset = selected_dataset(modality=modality, transform=test_transforms, **test_dataset_kwargs)
+        test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=shuffle)
+        model = getattr(models, param_config.get('modalities').get(modality).get('model').get('class_name'))(
+            *param_config.get('modalities').get(modality).get('model').get('args'),
+            **param_config.get('modalities').get(modality).get('model').get('kwargs')
+        )
+        model.load_state_dict(torch.load(getattr(args, modality + '_state')))
+        model.skip_last_fc = True
+        model = model.to(device)
 
-# Prepare data and labels, x and y
-(elm_train_data_data, elm_train_data_labels) = elm_train_data
-(elm_test_data_data, elm_test_data_labels) = elm_test_data
+        print('Getting train vectors from ' + modality)
+        train_scores, train_labels = get_predictions(train_loader, model, device)
+        train_all_scores = get_fused_scores(train_all_scores, train_scores, args.rule)
+        train_all_labels = get_fused_labels(train_all_labels, train_labels)
+        print('Getting test vectors from ' + modality)
+        test_scores, test_labels = get_predictions(test_loader, model, device)
+        test_all_scores = get_fused_scores(test_all_scores, test_scores, args.rule)
+        test_all_labels = get_fused_labels(test_all_labels, test_labels)
 
-# Fit the ELM in training data. For labels use any of the three, they are all the same since shuffle is off.
-print('Training elm network...')
-elm.fit(elm_train_data_data, elm_train_data_labels)
+    # Elm initialization
+    elm = ELM(input_size=train_all_scores.shape[1], num_classes=train_all_labels.shape[1], hidden_size=args.hidden_size,
+              device=device)
 
-# Get accuracy on test data
-accuracy = elm.evaluate(elm_test_data_data, elm_test_data_labels)
+    # Fit the ELM in training data. For labels use any of the three, they are all the same since shuffle is off.
+    print('Training elm network...')
+    elm.fit(train_all_scores, train_all_labels)
 
-print('ELM Accuracy: %f' % accuracy)
+    # Get accuracy on test data
+    accuracy = elm.evaluate(test_all_scores, test_all_labels)
+
+    print('ELM Accuracy: %f' % accuracy)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--gpu', type=int, default=2, help='Only applicable when cuda gpu is available')
+    parser.add_argument('--param_file', type=str, default='parameters/utd_mhad/default.yaml')
+    parser.add_argument('--hidden_size', type=int, default=8192)
+    parser.add_argument('--inertial_state', type=str, default=None)
+    parser.add_argument('--sdfdi_state', type=str, default=None)
+    parser.add_argument('--skeleton_state', type=str, default=None)
+    parser.add_argument('--rule', choices=['concat', 'avg'], default='avg')
+    args = parser.parse_args()
+    main(args)

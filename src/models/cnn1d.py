@@ -19,6 +19,7 @@ class CNN1D(nn.Module):
         Initiate layers of a 5 convolutions layer network
         """
         super(CNN1D, self).__init__()
+        self.skip_last_fc = False
         if in_channels is None:
             in_channels = [1, 32, 64, 128, 256]
         if out_channels is None:
@@ -78,7 +79,8 @@ class CNN1D(nn.Module):
         x = self.dropout(x)
         x = self.fc2(x)
         x = self.dropout(x)
-        x = self.fc3(x)
+        if not self.skip_last_fc:
+            x = self.fc3(x)
 
         if self.norm_out:
             norm = x.norm(p=2, dim=1, keepdim=True)

@@ -9,6 +9,7 @@ class BiGRU(nn.Module):
         self.hidden_size = hidden_size
         self.num_directions = 2  # bidirectional=True
         self.norm_out = norm_out
+        self.skip_last_fc = False
         self.bigru = nn.GRU(input_size, hidden_size, num_layers, batch_first=True,
                             bidirectional=self.num_directions == 2)
         self.dropout = nn.Dropout(p=dropout_rate, inplace=True)
@@ -22,7 +23,8 @@ class BiGRU(nn.Module):
         # Forward to fully connected layers
         out = self.fc1(out)
         out = self.dropout(out)
-        out = self.fc2(out)
+        if not self.skip_last_fc:
+            out = self.fc2(out)
 
         if self.norm_out:
             norm = out.norm(p=2, dim=1, keepdim=True)
