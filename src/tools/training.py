@@ -243,6 +243,21 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
     return train_losses, val_losses, val_accuracies, train_accuracies
 
 
+def train_simple(model, criterion, optimizer, epochs, data, labels):
+    model.train()
+    for epoch in range(epochs):
+        scores = model(data)
+        loss = criterion(scores, labels.argmax(1))
+        accu = get_num_correct_predictions(scores, labels) / labels.shape[0]
+
+        # backward
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        if epoch % 10 == 0:
+            print('Epoch %d/%d: loss %.2f accu %.2f' % (epoch, epochs, loss.item(), accu))
+
+
 @torch.no_grad()
 def get_loss(data_loader, model, device, criterion):
     """
@@ -273,6 +288,15 @@ def get_accuracy(data_loader, model, device):
     correct_pred_max = get_num_correct_predictions(all_predictions, all_labels)
 
     return correct_pred_max / all_predictions.shape[0]
+
+
+@torch.no_grad()
+def get_accuracy_simple(model, data, labels):
+    model.eval()
+    test_scores = model(data)
+    test_scores = functional.softmax(test_scores, 1)
+
+    return get_num_correct_predictions(test_scores, labels) / labels.shape[0]
 
 
 def get_confusion_matrix(data_loader, model, device):
