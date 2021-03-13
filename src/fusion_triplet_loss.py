@@ -129,10 +129,11 @@ def main(args):
         mlp = MLP(input_size=train_concat_scores.shape[1],
                   hidden_size=args.mlp_hidden_size,
                   out_size=train_concat_labels.shape[1],
+                  dropout_rate=args.mlp_dr,
                   norm_out=False)
         mlp = mlp.to(device)
         criterion = CrossEntropyLoss()
-        optimizer = RMSprop(mlp.parameters(), lr=0.001)
+        optimizer = RMSprop(mlp.parameters(), lr=args.mlp_lr)
         if not os.path.exists(MLP_STATE_FILE) or args.new_mlp:
             train_simple(mlp, criterion, optimizer, args.mlp_epochs, train_concat_scores, train_concat_labels)
             torch.save(mlp.state_dict(), MLP_STATE_FILE)
@@ -142,6 +143,7 @@ def main(args):
         test_accuracy = get_accuracy_simple(mlp, test_concat_scores, test_concat_labels)
 
     print('Test accuracy: %f' % test_accuracy)
+    return test_accuracy
 
 
 if __name__ == "__main__":
@@ -156,7 +158,9 @@ if __name__ == "__main__":
     parser.add_argument('--new_mlp', action='store_true', default=False,
                         help='Don\'t use saved state. Train mlp again.')
     parser.add_argument('--mlp_epochs', type=int, default=100, help='Number of epochs to train the mlp')
-    parser.add_argument('--mlp_hidden_size', type=int, default=2048)
+    parser.add_argument('--mlp_hidden_size', type=int, default=512)
+    parser.add_argument('--mlp_lr', type=float, default=0.001)
+    parser.add_argument('--mlp_dr', type=float, default=0.8)
     parser.add_argument('--inertial_state', type=str, default=None)
     parser.add_argument('--sdfdi_state', type=str, default=None)
     parser.add_argument('--skeleton_state', type=str, default=None)
