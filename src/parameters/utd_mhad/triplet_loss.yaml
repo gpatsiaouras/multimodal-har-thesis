@@ -1,6 +1,6 @@
 modalities:
   inertial:
-    num_epochs: 400
+    num_epochs: 100
     num_neighbors: 21
     num_samples: 4
     batch_size: 32
@@ -30,7 +30,7 @@ modalities:
         patience: 10
         verbose: true
   sdfdi:
-    num_epochs: 310
+    num_epochs: 500
     num_neighbors: 21
     num_samples: 4
     batch_size: 32

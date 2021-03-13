@@ -193,7 +193,7 @@ def train_triplet_loss(model, criterion, optimizer, class_names, train_loader, v
         else:
             # Save the model the first time without checking that the validation was reduced.
             print('Saved model for the first time')
-            saved_model_path = save_model(model, '%s.pt' % experiment)
+            saved_model_path = save_model(model, '%s_initial.pt' % experiment)
         val_losses.append(val_loss)
         if not skip_accuracy:
             writer.add_scalar('Embeddings/distances_val', torch.sum(torch.cdist(val_scores, val_scores)),
