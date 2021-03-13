@@ -92,13 +92,14 @@ def main(args):
     accuracy = elm.evaluate(test_all_scores, test_all_labels)
 
     print('ELM Accuracy: %f' % accuracy)
+    return accuracy
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=int, default=2, help='Only applicable when cuda gpu is available')
     parser.add_argument('--param_file', type=str, default='parameters/utd_mhad/default.yaml')
-    parser.add_argument('--hidden_size', type=int, default=8192)
+    parser.add_argument('--hidden_size', type=int, default=4096)
     parser.add_argument('--inertial_state', type=str, default=None)
     parser.add_argument('--sdfdi_state', type=str, default=None)
     parser.add_argument('--skeleton_state', type=str, default=None)

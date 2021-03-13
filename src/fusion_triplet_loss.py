@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 import datasets
 import models
 from datasets import get_transforms_from_config
-from models import MLP
+from models import MLP, ELM
 from tools import load_yaml, get_predictions, get_fused_scores, get_fused_labels, \
     train_simple, get_accuracy_simple
 from sklearn.neighbors import KNeighborsClassifier
@@ -125,6 +125,20 @@ def main(args):
 
         test_accuracy = int((test_concat_labels.argmax(1) == torch.Tensor(test_predictions)).sum()) / \
                         test_concat_labels.shape[0]
+    elif args.use_elm:
+        # Elm initialization
+        elm = ELM(input_size=train_concat_scores.shape[1],
+                  num_classes=train_concat_labels.shape[1],
+                  hidden_size=args.elm_hidden_size,
+                  device=device)
+
+        # Fit the ELM in training data. For labels use any of the three, they are all the same since shuffle is off.
+        print('Training elm network...')
+        elm.fit(train_concat_scores, train_concat_labels)
+
+        # Get accuracy on test data
+        test_accuracy = elm.evaluate(test_concat_scores, test_concat_labels)
+
     else:
         mlp = MLP(input_size=train_concat_scores.shape[1],
                   hidden_size=args.mlp_hidden_size,
@@ -151,6 +165,8 @@ if __name__ == "__main__":
     parser.add_argument('--gpu', type=int, default=2, help='Only applicable when cuda gpu is available')
     parser.add_argument('--out_size', type=int, default=None, help='Override out_size if needed')
     parser.add_argument('--use_knn', action='store_true', default=False, help='Use knn as classifier, else use MLP')
+    parser.add_argument('--use_elm', action='store_true', default=False, help='Use ELM as classifier, else use MLP')
+    parser.add_argument('--elm_hidden_size', type=int, default=2048)
     parser.add_argument('--n_neighbors', type=int, default=21)
     parser.add_argument('--param_file', type=str, default='parameters/utd_mhad/triplet_loss.yaml')
     parser.add_argument('--new_vectors', action='store_true', default=False,
