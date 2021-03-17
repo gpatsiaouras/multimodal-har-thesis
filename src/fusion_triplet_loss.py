@@ -16,6 +16,8 @@ from tools import load_yaml, get_predictions, get_fused_scores, get_fused_labels
 from sklearn.neighbors import KNeighborsClassifier
 
 # Seed for reproducibility
+from visualizers.tsne import run_tsne
+
 seed = 1
 torch.manual_seed(seed)
 torch.cuda.manual_seed_all(seed)
@@ -61,6 +63,7 @@ def main(args):
     train_concat_labels = None
     test_concat_scores = None
     test_concat_labels = None
+    class_names = None
 
     # Get concatenated vectors
     if not os.path.exists('/tmp/train_concat_scores.pt') or args.new_vectors:
@@ -95,6 +98,9 @@ def main(args):
             test_concat_scores = get_fused_scores(test_concat_scores, test_scores, args.rule)
             test_concat_labels = get_fused_labels(test_concat_labels, test_labels)
 
+            if not class_names:
+                class_names = train_dataset.get_class_names()
+
         # L2 Normalize the concatenated vectors
         train_concat_scores = train_concat_scores.div(train_concat_scores.norm(p=2, dim=1, keepdim=True))
         test_concat_scores = test_concat_scores.div(test_concat_scores.norm(p=2, dim=1, keepdim=True))
@@ -105,6 +111,17 @@ def main(args):
         torch.save(train_concat_labels, TRAIN_LABELS_FILE)
         torch.save(test_concat_scores, TEST_SCORES_FILE)
         torch.save(test_concat_labels, TEST_LABELS_FILE)
+
+        if args.print_tsne or args.save_tsne:
+            if device.type == 'cuda':
+                train_concat_scores = train_concat_scores.cpu()
+                train_concat_labels = train_concat_labels.cpu()
+                test_concat_scores = test_concat_scores.cpu()
+                test_concat_labels = test_concat_labels.cpu()
+            run_tsne(train_concat_scores, train_concat_labels.argmax(1), class_names, filename='train_embeddings.png',
+                     save=args.save_tsne, show=args.print_tsne)
+            run_tsne(test_concat_scores, test_concat_labels.argmax(1), class_names, filename='test_embeddings.png',
+                     save=args.save_tsne, show=args.print_tsne)
     else:
         print('Vectors exist. Loading...')
         train_concat_scores = torch.load(TRAIN_SCORES_FILE)
@@ -163,6 +180,8 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=int, default=2, help='Only applicable when cuda gpu is available')
+    parser.add_argument('--print_tsne', action='store_true', default=False)
+    parser.add_argument('--save_tsne', action='store_true', default=False)
     parser.add_argument('--out_size', type=int, default=None, help='Override out_size if needed')
     parser.add_argument('--use_knn', action='store_true', default=False, help='Use knn as classifier, else use MLP')
     parser.add_argument('--use_elm', action='store_true', default=False, help='Use ELM as classifier, else use MLP')

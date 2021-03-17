@@ -63,9 +63,6 @@ def train_and_test(args: argparse.Namespace):
         optimizer_kwargs['lr'] = args.lr
     if args.optimizer:
         optimizer = args.optimizer
-    scheduler_class_name = modality_config.get('scheduler').get('class_name')
-    scheduler_from = modality_config.get('scheduler').get('from_module')
-    scheduler_kwargs = modality_config.get('scheduler').get('kwargs')
 
     # Dataset config
     selected_dataset = getattr(datasets, param_config.get('dataset').get('class_name'))
@@ -110,6 +107,9 @@ def train_and_test(args: argparse.Namespace):
     optimizer = getattr(importlib.import_module(optimizer_from), optimizer)(model.parameters(), **optimizer_kwargs)
     scheduler = None
     if not args.no_scheduler:
+        scheduler_class_name = modality_config.get('scheduler').get('class_name')
+        scheduler_from = modality_config.get('scheduler').get('from_module')
+        scheduler_kwargs = modality_config.get('scheduler').get('kwargs')
         scheduler = getattr(importlib.import_module(scheduler_from), scheduler_class_name)(optimizer,
                                                                                            **scheduler_kwargs)
 

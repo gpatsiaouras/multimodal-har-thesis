@@ -26,6 +26,29 @@ modalities:
         patience: 10
         verbose: true
     num_epochs: 100
-    num_neighbors: 21
+    num_neighbors: 45
     num_samples: 4
     batch_size: 32
+  sdfdi:
+    model:
+      class_name: MobileNetV2
+      args: [ ]
+      kwargs:
+        out_size: 512
+        norm_out: true
+        dropout_rate: 0.1
+    batch_size: 32
+    num_epochs: 100
+    num_neighbors: 45
+    num_samples: 4
+    criterion:
+      class_name: TripletLossHard
+      from_module: losses
+      kwargs:
+        margin: 0.1
+        semi_hard: false
+    optimizer:
+      class_name: Adam
+      from_module: torch.optim
+      kwargs:
+        lr: 0.0001

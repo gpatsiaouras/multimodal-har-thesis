@@ -1,7 +1,6 @@
 import argparse
 import importlib
 import json
-import sys
 import time
 
 import torch
@@ -13,7 +12,9 @@ from torch.utils.tensorboard import SummaryWriter
 import datasets
 from datasets import get_transforms_from_config, BalancedSampler, ConcatDataset
 from models.medusa import Medusa
-from tools import load_yaml, get_predictions_with_knn, plot_confusion_matrix, train_triplet_loss
+from tools import load_yaml, get_predictions_with_knn, plot_confusion_matrix, train_triplet_loss, save_model, \
+    get_predictions
+from visualizers.tsne import run_tsne
 
 seed = 1
 torch.manual_seed(seed)
@@ -23,10 +24,6 @@ numpy.random.seed(seed)
 random.seed(seed)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-
-
-# import pydevd_pycharm
-# pydevd_pycharm.settrace('localhost', port=9229, stdoutToServer=True, stderrToServer=True)
 
 
 def get_train_val_test_datasets(dataset, modality, param_config):
@@ -87,6 +84,17 @@ def train_and_test(args: argparse.Namespace):
     n2_kwargs = param_config.get('modalities').get('sdfdi').get('model').get('kwargs')
     n3_kwargs = param_config.get('modalities').get('skeleton').get('model').get('kwargs')
     mlp_kwargs = param_config.get('general').get('mlp_kwargs')
+    if args.out_size:
+        n1_kwargs['out_size'] = args.out_size
+        n2_kwargs['out_size'] = args.out_size
+        n3_kwargs['out_size'] = args.out_size
+        mlp_kwargs['out_size'] = args.out_size
+        # Also adjust the input of the mlp due to the change in out_size
+        mlp_kwargs['input_size'] = 3 * args.out_size
+    if args.dr:
+        mlp_kwargs['dropout_rate'] = args.dr
+    if args.mlp_hidden_size:
+        mlp_kwargs['hidden_size'] = args.mlp_hidden_size
 
     model = Medusa(mlp_kwargs, n1_kwargs, n2_kwargs, n3_kwargs)
     if args.test:
@@ -115,7 +123,7 @@ def train_and_test(args: argparse.Namespace):
             experiment = '%s_medusa' % datetime
         else:
             experiment = args.experiment
-        writer = SummaryWriter('../logs/medusa/' + experiment)
+        writer = SummaryWriter('../logs/' + experiment)
 
         train_losses, val_losses, val_accuracies, train_accuracies = train_triplet_loss(model, criterion, optimizer,
                                                                                         class_names,
@@ -124,6 +132,9 @@ def train_and_test(args: argparse.Namespace):
                                                                                         experiment, num_neighbors,
                                                                                         writer, verbose=True,
                                                                                         skip_accuracy=args.skip_accuracy)
+
+        # Save last state of model
+        save_model(model, '%s_last_state.pt' % experiment)
 
     cm, test_acc, test_scores, test_labels = get_predictions_with_knn(
         n_neighbors=num_neighbors,
@@ -149,13 +160,28 @@ def train_and_test(args: argparse.Namespace):
         writer.add_text('args', json.dumps(args.__dict__, indent=2))
         writer.flush()
         writer.close()
+
+    if args.print_tsne or args.save_tsne:
+        train_scores, train_labels = get_predictions(train_loader, model, device, apply_softmax=False)
+        if device.type == 'cuda':
+            train_scores = train_scores.cpu()
+            train_labels = train_labels.cpu()
+        run_tsne(train_scores, train_labels.argmax(1), class_names, filename='train_medusa_embeddings.png',
+                 save=args.save_tsne, show=args.print_tsne)
+        run_tsne(test_scores, test_labels, class_names, filename='test_medusa_embeddings.png',
+                 save=args.save_tsne, show=args.print_tsne)
     print('Test acc: %.5f' % test_acc)
+
+    return test_acc
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=int, default=2, help='Only applicable when cuda gpu is available')
+    parser.add_argument('--print_tsne', action='store_true', default=False)
+    parser.add_argument('--save_tsne', action='store_true', default=False)
     parser.add_argument('--out_size', type=int, default=None, help='Override out_size if needed')
+    parser.add_argument('--mlp_hidden_size', type=int, default=None)
     parser.add_argument('--lr', type=float, default=None)
     parser.add_argument('--margin', type=float, default=None)
     parser.add_argument('--dr', type=float, default=None, help='Dropout rate')
