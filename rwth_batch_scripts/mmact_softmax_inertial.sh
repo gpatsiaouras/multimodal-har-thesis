@@ -22,4 +22,4 @@ source venv/bin/activate
 cd /home/cn226306/multimodal-har-thesis/src
 
 # Execute
-python -u train.py --modality inertial --experiment "mmact_finals/softmax_inertial" --gpu 0 --param_file $PARAM_FILE
+python -u train.py --modality inertial --experiment "exper_mmact/inertial_default" --gpu 0 --param_file $PARAM_FILE
