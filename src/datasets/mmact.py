@@ -79,7 +79,10 @@ class MmactDataset(Dataset):
                             scene=scene,
                             session=session,
                         )
-                        if os.path.isfile(filename) and os.path.getsize(filename):
+                        if os.path.isfile(filename) and os.path.getsize(
+                                filename) and self.file_also_exists_in_other_modalities(self.actions[action_idx],
+                                                                                        self.modality,
+                                                                                        subject, scene, session):
                             self.filenames.append(filename)
                             self.labels.append(action_idx)
                         elif self.modality['folder_name'] == 'sdfdi':
@@ -90,7 +93,9 @@ class MmactDataset(Dataset):
                                 scene=scene,
                                 session=session,
                             )
-                            if os.path.isfile(video_filename):
+                            if os.path.isfile(video_filename) and self.file_also_exists_in_other_modalities(
+                                    self.actions[action_idx], self.modality,
+                                    subject, scene, session):
                                 print('Item %s doesn\'t exist. Creating...' % filename)
                                 create_jpg_image(filename, video_filename)
                                 self.filenames.append(filename)
@@ -105,7 +110,10 @@ class MmactDataset(Dataset):
                                     scene=scene,
                                     session=session,
                                 )
-                                if os.path.isfile(filename) and os.path.getsize(filename):
+                                if os.path.isfile(filename) and os.path.getsize(
+                                        filename) and self.file_also_exists_in_other_modalities(
+                                        self.actions[action_idx], self.modality,
+                                        subject, scene, session):
                                     filenames.append(filename)
                             # Only if we have all necessary files consider this a sample.
                             if len(filenames) == len(self.modality['combine']):
@@ -149,3 +157,11 @@ class MmactDataset(Dataset):
         :return: list of class names
         """
         return self.actions
+
+    def file_also_exists_in_other_modalities(self, action, currentModality, subject, scene, session):
+        for modality in self.modalities:
+            if modality != currentModality and modality != 'inertial':
+                file = self.get_filename(action, self.modalities[modality], subject, scene, session)
+                if not os.path.isfile(file) or not os.path.getsize(file):
+                    return False
+        return True

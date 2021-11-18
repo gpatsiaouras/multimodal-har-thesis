@@ -3,7 +3,7 @@ modalities:
     model:
       class_name: CNN1D
       args:
-        - 1284
+        - 4248
         - 36
       kwargs: { }
     transforms:
@@ -11,18 +11,18 @@ modalities:
         from_module: transforms
         in_test: true
         args:
-          - [ -0.0659151, -6.96950652, -0.83807499, 5.40047484, -3.81441984, 1.2683678, 0.00251269, -0.01801674, -0.02959874, -0.03659844, 0.3757849, 0.13108678 ]
-          - [ 1.83959157, 2.44727826, 2.29080495, 3.73154579, 3.496252, 2.99241264, 0.64659124, 0.78229164, 0.43438999, 1.16419016, 0.21276641, 1.27769152 ]
+          - [ -1.65804089e-01, -2.88375486e+00,  4.25408345e-01,  5.40047484e+00, -3.81441984e+00, 1.26836780e+00, 2.14082568e-03, -1.77516933e-02, -2.96111521e-02, -4.68627653e-02, 3.90400772e-01, 1.43687585e-01 ]
+          - [ 1.73399587, 2.17337823, 2.03517155, 3.7150504, 3.46689411, 2.9703028, 0.64952911, 0.78470781, 0.43690807, 1.15647647, 0.21387406, 1.26683067 ]
       - class_name: Sampler
         from_module: transforms
         in_test: true
         args:
-          - 107
+          - 354
       - class_name: Jittering
         from_module: transforms
         in_test: false
         args:
-          - [ 0, 500, 1000 ]
+          - [ 0, 500 ]
       - class_name: Flatten
         from_module: transforms
         in_test: true
@@ -74,10 +74,10 @@ modalities:
     model:
       class_name: CNN1D
       args:
-        - 321
+        - 4248
         - 36
       kwargs:
-        norm_out: true
+        norm_out: false
     transforms:
       - class_name: Normalize
         from_module: transforms
@@ -89,12 +89,17 @@ modalities:
         from_module: transforms
         in_test: true
         args:
-          - 107
+          - 354
+      - class_name: Jittering
+        from_module: transforms
+        in_test: false
+        args:
+          - [ 0, 500 ]
       - class_name: Flatten
         from_module: transforms
         in_test: true
         args: [ ]
-    batch_size: 16
+    batch_size: 256
     num_epochs: 50
     criterion:
       class_name: CrossEntropyLoss

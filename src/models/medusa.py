@@ -16,7 +16,10 @@ class Medusa(nn.Module):
         self.mlp = MLP(**mlp_kwargs)
 
     def forward(self, x):
-        (x1, x2, x3) = x
+        if self.n3:
+            (x1, x2, x3) = x
+        else:
+            (x1, x2) = x
         x1 = self.n1(x1)
         x2 = self.n2(x2)
         if self.n3:

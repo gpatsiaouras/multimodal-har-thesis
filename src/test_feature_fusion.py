@@ -11,6 +11,9 @@ from datasets import get_transforms_from_config
 from models import ELM
 from tools import get_predictions, load_yaml, get_fused_scores, get_fused_labels
 
+# import pydevd_pycharm
+# pydevd_pycharm.settrace('localhost', port=9229, stdoutToServer=True, stderrToServer=True)
+
 # Seed for reproducibility
 seed = 1
 torch.manual_seed(seed)

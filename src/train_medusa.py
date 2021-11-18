@@ -43,7 +43,7 @@ def get_train_val_test_datasets(dataset, modality, param_config):
 
 
 def train_and_test(args: argparse.Namespace):
-    param_config = load_yaml(args.param_file)
+    param_config = load_yaml(args.param_file, append=False)
 
     # Select device
     cuda_device = 'cuda:%d' % args.gpu
@@ -60,13 +60,20 @@ def train_and_test(args: argparse.Namespace):
     train_inertial, val_inertial, test_inertial = get_train_val_test_datasets(selected_dataset, 'inertial',
                                                                               param_config)
     train_sdfdi, val_sdfdi, test_sdfdi = get_train_val_test_datasets(selected_dataset, 'sdfdi', param_config)
-    train_skeleton, val_skeleton, test_skeleton = get_train_val_test_datasets(selected_dataset, 'skeleton',
-                                                                              param_config)
-
+    if param_config.get('modalities').get('skeleton'):
+        train_skeleton, val_skeleton, test_skeleton = get_train_val_test_datasets(selected_dataset, 'skeleton',
+                                                                                  param_config)
+    train_datasets = [train_inertial, train_sdfdi]
+    val_datasets = [val_inertial, val_sdfdi]
+    test_datasets = [test_inertial, test_sdfdi]
+    if param_config.get('modalities').get('skeleton'):
+        train_datasets.append(train_skeleton)
+        val_datasets.append(val_skeleton)
+        test_datasets.append(test_skeleton)
     # Prepare concat datasets and loaders
-    train_dataset = ConcatDataset(train_inertial, train_sdfdi, train_skeleton)
-    val_dataset = ConcatDataset(val_inertial, val_sdfdi, val_skeleton)
-    test_dataset = ConcatDataset(test_inertial, test_sdfdi, test_skeleton)
+    train_dataset = ConcatDataset(*train_datasets)
+    val_dataset = ConcatDataset(*val_datasets)
+    test_dataset = ConcatDataset(*test_datasets)
     num_actions = len(train_dataset.datasets[0].actions)
     batch_size = param_config.get('general').get('batch_size')
     shuffle = param_config.get('general').get('shuffle')
@@ -82,12 +89,15 @@ def train_and_test(args: argparse.Namespace):
     # Load medusa network
     n1_kwargs = param_config.get('modalities').get('inertial').get('model').get('kwargs')
     n2_kwargs = param_config.get('modalities').get('sdfdi').get('model').get('kwargs')
-    n3_kwargs = param_config.get('modalities').get('skeleton').get('model').get('kwargs')
+    n3_kwargs = None
+    if param_config.get('modalities').get('skeleton'):
+        n3_kwargs = param_config.get('modalities').get('skeleton').get('model').get('kwargs')
     mlp_kwargs = param_config.get('general').get('mlp_kwargs')
     if args.out_size:
         n1_kwargs['out_size'] = args.out_size
         n2_kwargs['out_size'] = args.out_size
-        n3_kwargs['out_size'] = args.out_size
+        if param_config.get('modalities').get('skeleton'):
+            n3_kwargs['out_size'] = args.out_size
         mlp_kwargs['out_size'] = args.out_size
         # Also adjust the input of the mlp due to the change in out_size
         mlp_kwargs['input_size'] = 3 * args.out_size

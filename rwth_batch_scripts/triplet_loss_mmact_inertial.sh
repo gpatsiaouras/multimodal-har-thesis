@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --job-name=sdfdi_semi_hard_ep500_lr0.001
+#SBATCH --job-name=iner_sm
 #SBATCH --output /home/cn226306/scheduled_jobs_output/%J_output.txt
 
-#SBATCH --time=18:00:00
+#SBATCH --time=08:00:00
 #SBATCH --gres=gpu:1
 
 
@@ -21,4 +21,4 @@ source venv/bin/activate
 cd /home/cn226306/multimodal-har-thesis/src
 
 # Execute
-python -u train_triplet_loss.py --experiment "exper_mmact_tl/sdfdi_lr0.001_semi_hard_ep500" --gpu 0 --no_scheduler --modality sdfdi --param_file $PARAM_FILE --lr 0.001 --semi_hard --epochs 500
+python -u train_triplet_loss.py --experiment "exper_mmact_tl/inertial_semi_hard" --gpu 0 --no_scheduler --modality inertial --param_file $PARAM_FILE --epochs 500 --semi_hard

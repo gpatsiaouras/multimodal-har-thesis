@@ -25,7 +25,8 @@ def main(args):
     if args.compare:
         data = np.array([sample[:, 0], plot_data[:, 0]])
         legends = ['Original', 'Jittered %d' % args.jitter_factor]
-        plot_inertial_gyroscope_multiple(title='Gyroscope', y_label='deg/sec', legends=legends, data=data,
+        plot_inertial_gyroscope_multiple(title='Gyroscope - Jitter factor %d' % args.jitter_factor, y_label='deg/sec',
+                                         legends=legends, data=data,
                                          save=args.save,
                                          show_figure=args.show)
     else:

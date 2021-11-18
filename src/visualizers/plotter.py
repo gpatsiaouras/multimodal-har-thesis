@@ -5,6 +5,10 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
+parameters = {'xtick.labelsize': 16, 'ytick.labelsize': 16, 'legend.fontsize': 20, 'figure.titlesize': 22,
+              'axes.titlesize': 20, 'axes.labelsize': 20}
+plt.rcParams.update(parameters)
+
 
 def plot_inertial_accelerometer(data):
     """
@@ -27,12 +31,14 @@ def plot_inertial_gyroscope(data, save):
 
 
 def plot_inertial_gyroscope_multiple(title, y_label, legends, data, save=False, show_figure=True):
-    plt.style.use('seaborn-whitegrid')
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 8))
     for i in range(len(data)):
         ax.plot(data[i], label=legends[i])
-    ax.set(title=title, ylabel=y_label, xlabel='Timesteps')
-    fig.legend()
+
+    fig.suptitle(title, fontweight='bold')
+    ax.set_xlabel('timesteps', fontweight='bold')
+    ax.set_ylabel(y_label, fontweight='bold')
+    ax.legend()
     if save:
         _save_plot(fig, '%s.png' % title.strip())
     if show_figure:
@@ -48,13 +54,16 @@ def plot_inertial(data, title, y_label, save=False, show_figure=True):
     :param save: Save figure to file
     :param show_figure: Show figure
     """
-    plt.style.use('seaborn-whitegrid')
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 8))
     ax.plot(data[:, 0], label='X')
     ax.plot(data[:, 1], label='Y')
     ax.plot(data[:, 2], label='Z')
-    ax.set(title=title, ylabel=y_label, xlabel='Timesteps')
-    fig.legend()
+
+    fig.suptitle(title, fontweight='bold')
+    ax.set_xlabel('timesteps', fontweight='bold')
+    ax.set_ylabel(y_label, fontweight='bold')
+
+    ax.legend(loc='upper right')
     if save:
         _save_plot(fig, '%s.png' % title.strip())
     if show_figure:

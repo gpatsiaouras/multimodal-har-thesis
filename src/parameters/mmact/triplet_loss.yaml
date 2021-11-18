@@ -6,14 +6,14 @@ modalities:
         - 1284
       kwargs:
         out_size: 512
-        dropout_rate: 0.1
+        dropout_rate: 0.0
         norm_out: true
     criterion:
       class_name: TripletLossHard
       from_module: losses
       kwargs:
         margin: 0.1
-        semi_hard: true
+        semi_hard: false
     optimizer:
       class_name: RMSprop
       from_module: torch.optim
@@ -34,13 +34,13 @@ modalities:
       class_name: MobileNetV2
       args: [ ]
       kwargs:
-        out_size: 512
+        out_size: 2048
         norm_out: true
-        dropout_rate: 0.1
+        dropout_rate: 0.0
     batch_size: 32
-    num_epochs: 100
+    num_epochs: 500
     num_neighbors: 45
-    num_samples: 4
+    num_samples: 5
     criterion:
       class_name: TripletLossHard
       from_module: losses
@@ -51,4 +51,4 @@ modalities:
       class_name: Adam
       from_module: torch.optim
       kwargs:
-        lr: 0.0001
+        lr: 0.001
